@@ -1,4 +1,4 @@
-package clipcollator;
+package contactcollator;
 
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
@@ -13,12 +13,12 @@ import PamController.PamControlledUnitSettings;
 import PamController.PamSettingManager;
 import PamController.PamSettings;
 import PamView.dialog.GenericSwingDialog;
-import clipcollator.swing.CollatorDialog;
-import clipcollator.swing.CollatorDialogPanel;
+import contactcollator.swing.CollatorDialog;
+import contactcollator.swing.CollatorDialogPanel;
 
 public class CollatorControl extends PamControlledUnit implements PamSettings {
 	
-	public static final String unitType = "Clip Collator";
+	public static final String unitType = "Contact Collator";
 	
 	private CollatorParams collatorParams = new CollatorParams();
 	

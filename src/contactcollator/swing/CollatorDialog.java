@@ -1,10 +1,10 @@
-package clipcollator.swing;
+package contactcollator.swing;
 
 import java.awt.Window;
 
 import PamView.dialog.PamDialog;
-import clipcollator.CollatorControl;
-import clipcollator.CollatorParams;
+import contactcollator.CollatorControl;
+import contactcollator.CollatorParams;
 
 public class CollatorDialog extends PamDialog {
 

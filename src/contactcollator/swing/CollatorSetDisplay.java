@@ -1,4 +1,4 @@
-package clipcollator.swing;
+package contactcollator.swing;
 
 import java.awt.Component;
 import java.awt.GridBagConstraints;
@@ -20,7 +20,7 @@ import PamView.dialog.PamGridBagContraints;
 import PamView.dialog.PamTextDisplay;
 import PamView.dialog.ScrollingPamLabel;
 import PamView.dialog.SourcePanel;
-import clipcollator.CollatorParamSet;
+import contactcollator.CollatorParamSet;
 
 /**
  *  simpler display panel for a collator set which can be used in the main dialog, alongside

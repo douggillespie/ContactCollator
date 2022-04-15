@@ -1,4 +1,4 @@
-package clipcollator.swing;
+package contactcollator.swing;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -25,8 +25,8 @@ import PamguardMVC.PamDataBlock;
 import PamguardMVC.dataSelector.DataSelector;
 import PamguardMVC.dataSelector.DataSelectorCreator;
 import PamguardMVC.dataSelector.NullDataSelectorCreator;
-import clipcollator.CollatorControl;
-import clipcollator.CollatorParamSet;
+import contactcollator.CollatorControl;
+import contactcollator.CollatorParamSet;
 
 public class CollatorSetPanel implements PamDialogPanel {
 

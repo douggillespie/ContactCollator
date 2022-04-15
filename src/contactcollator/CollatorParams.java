@@ -1,4 +1,4 @@
-package clipcollator;
+package contactcollator;
 
 import java.io.Serializable;
 import java.util.ArrayList;

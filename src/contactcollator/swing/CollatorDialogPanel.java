@@ -1,4 +1,4 @@
-package clipcollator.swing;
+package contactcollator.swing;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -21,9 +21,9 @@ import PamView.dialog.GenericSwingDialog;
 import PamView.dialog.PamDialogPanel;
 import PamView.dialog.PamGridBagContraints;
 import PamView.panel.PamPanel;
-import clipcollator.CollatorControl;
-import clipcollator.CollatorParamSet;
-import clipcollator.CollatorParams;
+import contactcollator.CollatorControl;
+import contactcollator.CollatorParamSet;
+import contactcollator.CollatorParams;
 
 public class CollatorDialogPanel implements PamDialogPanel {
 

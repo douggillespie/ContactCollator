@@ -1,4 +1,4 @@
-package clipcollator;
+package contactcollator;
 
 import PamguardMVC.PamDataBlock;
 import PamguardMVC.PamProcess;

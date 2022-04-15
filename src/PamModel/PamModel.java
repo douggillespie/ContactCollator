@@ -37,7 +37,7 @@ import javax.swing.JFrame;
 import Acquisition.DaqSystemInterface;
 import Array.ArraySidePanelControl;
 import clickDetector.ClickDetection;
-import clipcollator.CollatorControl;
+import contactcollator.CollatorControl;
 import dataMap.DataMapControl;
 import detectiongrouplocaliser.DetectionGroupControl;
 import effortmonitor.EffortControl;
