@@ -9,9 +9,13 @@ import PamguardMVC.PamObserver;
 import PamguardMVC.PamProcess;
 import PamguardMVC.PamRawDataBlock;
 import PamguardMVC.dataSelector.DataSelector;
+import contactcollator.trigger.CollatorRateFilter;
 import contactcollator.trigger.CollatorTrigger;
 import contactcollator.trigger.CollatorTriggerData;
 import contactcollator.trigger.CountingTrigger;
+import decimator.DecimatorParams;
+import decimator.DecimatorProcessW;
+import decimator.DecimatorWorker;
 
 public class CollatorStreamProcess extends PamProcess {
 
@@ -24,6 +28,8 @@ public class CollatorStreamProcess extends PamProcess {
 	private PamDataBlock detectorDatablock;
 	private DataSelector detectionDataSelector;
 	private CollatorTrigger collatorTrigger;
+	private CollatorRateFilter collatorRateFilter;
+	private DecimatorWorker decimator;
 
 	public CollatorStreamProcess(CollatorControl collatorControl, CollatorDataBlock collatorBlock, CollatorParamSet parameterSet) {
 		super(collatorControl, null);
@@ -36,6 +42,7 @@ public class CollatorStreamProcess extends PamProcess {
 		 *  lock the main raw data block for too long while preparing output 
 		 */		
 		rawDataCopy = new PamRawDataBlock("internal copy", this, 0, sampleRate);
+		collatorRateFilter = new CollatorRateFilter();
 	}
 
 	@Override
@@ -90,6 +97,11 @@ public class CollatorStreamProcess extends PamProcess {
 	 */
 	private void newDetectionTrigger(CollatorTriggerData trigger, PamDataUnit dataUnit) {
 		// TODO Auto-generated method stub
+		int option = collatorRateFilter.judgeTriggerData(trigger);
+		if (option != CollatorRateFilter.TRIGGER_DONTSEND) {
+			// sort out all the data we'll be wanting and send or update output
+//			wav = rawDataCopy.
+		}
 		
 	}
 
@@ -181,6 +193,13 @@ public class CollatorStreamProcess extends PamProcess {
 			rawDataCopy.setChannelMap(rawDataBlock.getChannelMap());
 			rawDataCopy.setSampleRate(rawDataBlock.getSampleRate(), false);
 			rawDataCopy.setNaturalLifetimeMillis((int) ((parameterSet.outputClipLengthS*1.1) * 1000));
+			if (parameterSet.outputSampleRate == rawDataBlock.getSampleRate()) {
+				decimator = null;
+			}
+			else {
+				DecimatorParams dp = new DecimatorParams(parameterSet.outputSampleRate);
+				decimator = new DecimatorWorker(dp, 1, rawDataBlock.getSampleRate(), parameterSet.outputSampleRate);
+			}
 		}
 		
 		super.setupProcess();
@@ -196,6 +215,7 @@ public class CollatorStreamProcess extends PamProcess {
 		detectionDataSelector = detectorDatablock.getDataSelector(collatorControl.getDataSelectorName(getSetName()), false);
 		
 		collatorTrigger = new CountingTrigger(parameterSet);
+		collatorTrigger.reset();
 		
 		super.prepareProcess();
 	}
