@@ -4,34 +4,42 @@ import PamguardMVC.DataUnitBaseData;
 import PamguardMVC.PamDataUnit;
 import PamguardMVC.RawDataHolder;
 import PamguardMVC.RawDataTransforms;
+import clipgenerator.ClipDataUnit;
+import contactcollator.trigger.CollatorTriggerData;
 
-public class CollatorDataUnit extends PamDataUnit<PamDataUnit, PamDataUnit> implements RawDataHolder {
-	
-	private double[][] waveData;
-	
+public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder {
+		
 	private float sampleRate;
 	
 	private String detectorSource;
 	
 	private long detectionUID; // may want to replace this with a list. 
 
-	public CollatorDataUnit(DataUnitBaseData basicData) {
-		super(basicData);
-	}
+	private CollatorTriggerData triggerData;
+	
+	private RawDataTransforms rawDataTransforms;
 
-	public CollatorDataUnit(long timeMilliseconds, int channelBitmap, long startSample, long durationSamples) {
-		super(timeMilliseconds, channelBitmap, startSample, durationSamples);
-	}
+//	public CollatorDataUnit(DataUnitBaseData basicData) {
+//		super(basicData);
+//	}
 
-	@Override
-	public double[][] getWaveData() {
-		return waveData;
+	/*
+	 * 
+	public ClipDataUnit(long timeMilliseconds, long triggerMilliseconds,
+			long startSample, int durationSamples, int channelMap, String fileName,
+			String triggerName,	double[][] rawData, float sourceSampleRate) {
+	 */
+	public CollatorDataUnit(long timeMilliseconds, int channelBitmap, long startSample, float sampleRate, int durationSamples, CollatorTriggerData triggerData, double[][] wavData) {
+		super(timeMilliseconds, triggerData.getStartTime(), startSample, durationSamples, channelBitmap, null, triggerData.getTriggerName(), wavData, sampleRate);
+		this.triggerData = triggerData;
 	}
 
 	@Override
 	public RawDataTransforms getDataTransforms() {
-		// TODO Auto-generated method stub
-		return null;
+		if (rawDataTransforms == null) {
+			rawDataTransforms = new RawDataTransforms(this, this);
+		}
+		return rawDataTransforms;
 	}
 
 }

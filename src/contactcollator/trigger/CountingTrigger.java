@@ -36,7 +36,7 @@ public class CountingTrigger implements CollatorTrigger {
 			long start = history.get(0).getTimeMilliseconds();
 			long end = dataUnit.getEndTimeInMilliseconds();
 			List<PamDataUnit> histClone = new LinkedList<>(history);
-			CollatorTriggerData trigData = new CollatorTriggerData(start, end, histClone);
+			CollatorTriggerData trigData = new CollatorTriggerData(start, end, parameterSet.detectionSource, histClone);
 			return trigData;
 		}
 	}

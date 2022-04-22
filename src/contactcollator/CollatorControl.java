@@ -13,10 +13,17 @@ import PamController.PamControlledUnitSettings;
 import PamController.PamSettingManager;
 import PamController.PamSettings;
 import PamView.dialog.GenericSwingDialog;
+import clipgenerator.ClipDataUnit;
+import clipgenerator.ClipDisplayDataBlock;
+import clipgenerator.clipDisplay.ClipDisplayDecorations;
+import clipgenerator.clipDisplay.ClipDisplayParent;
+import clipgenerator.clipDisplay.ClipDisplayUnit;
 import contactcollator.swing.CollatorDialog;
 import contactcollator.swing.CollatorDialogPanel;
+import contactcollator.swing.CollatorDisplayProvider;
+import userDisplay.UserDisplayControl;
 
-public class CollatorControl extends PamControlledUnit implements PamSettings {
+public class CollatorControl extends PamControlledUnit implements PamSettings, ClipDisplayParent {
 	
 	public static final String unitType = "Contact Collator";
 	
@@ -24,10 +31,15 @@ public class CollatorControl extends PamControlledUnit implements PamSettings {
 	
 	private CollatorProcess collatorProcess;
 
+	private CollatorDisplayProvider displayProvider;
+	
 	public CollatorControl(String unitName) {
 		super(unitType, unitName);
 		collatorProcess = new CollatorProcess(this);
 		addPamProcess(collatorProcess);
+		
+		displayProvider = new CollatorDisplayProvider(this);
+		UserDisplayControl.addUserDisplayProvider(displayProvider);
 		
 		PamSettingManager.getInstance().registerSettings(this);
 	}
@@ -117,6 +129,27 @@ public class CollatorControl extends PamControlledUnit implements PamSettings {
 		}
 		catch (NullPointerException e) {}
 		return null;
+	}
+
+	@Override
+	public ClipDisplayDataBlock getClipDataBlock() {
+		return collatorProcess.getCollatorDataBlock();
+	}
+
+	@Override
+	public String getDisplayName() {
+		return getUnitName();
+	}
+
+	@Override
+	public ClipDisplayDecorations getClipDecorations(ClipDisplayUnit clipDisplayUnit) {
+		return new ClipDisplayDecorations(clipDisplayUnit);
+	}
+
+	@Override
+	public void displaySettingChange() {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

@@ -2,8 +2,10 @@ package contactcollator;
 
 import java.util.ArrayList;
 
+import Acquisition.AcquisitionControl;
 import Array.ArrayManager;
 import PamController.PamControlledUnit;
+import PamController.PamController;
 import PamUtils.PamUtils;
 import PamguardMVC.PamDataBlock;
 import PamguardMVC.PamProcess;
@@ -45,6 +47,13 @@ public class CollatorProcess extends PamProcess {
 		// sample rate is tricky, since it's going to be variable, so can't really use that !
 		
 		organiseStreamProcesses();
+		
+		// set the parent process of the main output datablock (i.e. the parent of this) to be the first 
+		// acquisition or a few things don't work properly. 
+		AcquisitionControl daq = (AcquisitionControl) PamController.getInstance().findControlledUnit(AcquisitionControl.unitType);
+		if (daq != null) {
+			setParentDataBlock(daq.getRawDataBlock());
+		}
 	}
 
 	@Override
@@ -103,6 +112,13 @@ public class CollatorProcess extends PamProcess {
 		}
 		catch(NullPointerException e) {} 
 		return null;
+	}
+
+	/**
+	 * @return the collatorDataBlock
+	 */
+	public CollatorDataBlock getCollatorDataBlock() {
+		return collatorDataBlock;
 	}
 
 

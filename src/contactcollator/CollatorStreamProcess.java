@@ -1,7 +1,11 @@
 package contactcollator;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 import PamController.PamController;
 import PamDetection.RawDataUnit;
+import PamUtils.PamUtils;
 import PamguardMVC.PamDataBlock;
 import PamguardMVC.PamDataUnit;
 import PamguardMVC.PamObservable;
@@ -99,10 +103,98 @@ public class CollatorStreamProcess extends PamProcess {
 		// TODO Auto-generated method stub
 		int option = collatorRateFilter.judgeTriggerData(trigger);
 		if (option != CollatorRateFilter.TRIGGER_DONTSEND) {
-			// sort out all the data we'll be wanting and send or update output
+			// sort out all the data we'll be wanting and send or update output. Probably need to decimate it, etc. 
+			// can we block the datablock here ? Or do I need to clone the clone ? 
+			ArrayList<RawDataUnit> cloneCopy = null;
+			synchronized (rawDataCopy.getSynchLock()) {
+				cloneCopy = rawDataCopy.getDataCopy();
+			}
+			/* 
+			 * that's safe ! Freed copy, can now take time decimating those data, etc. though note that this may 
+			 * still block the trigger data thread if the next stage takes more than a second or two, to may need 
+			 * to make an entirely new thread to handle these final bits of the processing?? 
+			 */
+			CollatorDataUnit newDataUnit = getFSWav(trigger, cloneCopy, 0x1);
+			synchronized (collatorBlock.getSynchLock()) {
+				collatorBlock.addPamData(newDataUnit);
+			}
 //			wav = rawDataCopy.
 		}
 		
+	}
+	
+	
+	/**
+	 * Get waveform data from the store at full sample rate. 
+	 * @param trigger
+	 * @param cloneCopy 
+	 * @param channelMap
+	 */
+	private CollatorDataUnit getFSWav(CollatorTriggerData trigger, ArrayList<RawDataUnit> cloneCopy, int channelMap) {
+		int nChan = PamUtils.getNumChannels(channelMap);
+		double[][] wavData = new double[nChan][];
+		float fs = parameterSet.outputSampleRate;
+		// allocate more data than we need, then trim it down later. 
+		int allocatedSamples = (int) ((trigger.getEndTime()-trigger.getStartTime() + 1000) * fs / 1000.);
+		for (int i = 0; i < nChan; i++) {
+			wavData[i] = new double[allocatedSamples]; 
+		}
+		int[] channelSamples = new int[nChan];
+		RawDataUnit decimatedData = null;
+		double[] raw = null;
+		long clipStartMillis = -1;
+		long clipStartSample = -1;
+//		if (decimator != null) {
+//			decimator.
+//		}
+		for (RawDataUnit rawUnit : cloneCopy) {
+			if (rawUnit.getEndTimeInMilliseconds() < trigger.getStartTime()) {
+				continue;
+			}
+			if (rawUnit.getTimeMilliseconds() > trigger.getEndTime()) {
+				break;
+			}
+			int rawChan = PamUtils.getSingleChannel(rawUnit.getChannelBitmap());
+			int iChan = PamUtils.getChannelPos(rawChan, channelMap);
+			if (iChan < 0) {
+				continue;
+			}
+
+			if (decimator != null) {
+				decimatedData = decimator.process(rawUnit);
+				raw = decimatedData.getRawData();
+			}
+			else {
+				raw = rawUnit.getRawData();
+			}
+			if (clipStartMillis < 0) {
+				clipStartMillis = rawUnit.getTimeMilliseconds();
+				clipStartSample = rawUnit.getStartSample();
+			}
+			int newLength = channelSamples[iChan] + raw.length;
+			if (newLength > wavData[iChan].length) {
+				wavData[iChan] = Arrays.copyOf(wavData[iChan], newLength);
+			}
+			System.arraycopy(raw, 0, wavData[iChan], channelSamples[iChan], raw.length);
+			channelSamples[iChan] += raw.length;
+		}
+		// now check the final lengths of the arrays. Very likely one or other of these will get called. 
+		for (int i = 0; i < nChan; i++) {
+			if (channelSamples[i] > allocatedSamples) {
+				// keep the end, skip the start
+				int skipSamples = channelSamples[i]-allocatedSamples;
+				clipStartMillis += skipSamples * 1000 / fs;
+				wavData[i] = Arrays.copyOfRange(wavData[i], channelSamples[i]-allocatedSamples, channelSamples[i]);
+			}
+			else if (channelSamples[i] < allocatedSamples) {
+				// keep the start
+				wavData[i] = Arrays.copyOf(wavData[i], allocatedSamples);
+			}
+		}
+		
+		CollatorDataUnit newData = new CollatorDataUnit(clipStartMillis, channelMap, clipStartSample, parameterSet.outputSampleRate, allocatedSamples, trigger, wavData);
+				
+		return newData;
 	}
 
 	public String getSetName() {
@@ -198,7 +290,7 @@ public class CollatorStreamProcess extends PamProcess {
 			}
 			else {
 				DecimatorParams dp = new DecimatorParams(parameterSet.outputSampleRate);
-				decimator = new DecimatorWorker(dp, 1, rawDataBlock.getSampleRate(), parameterSet.outputSampleRate);
+				decimator = new DecimatorWorker(dp, rawDataBlock.getChannelMap(), rawDataBlock.getSampleRate(), parameterSet.outputSampleRate);
 			}
 		}
 		
