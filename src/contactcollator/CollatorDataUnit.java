@@ -5,6 +5,8 @@ import PamguardMVC.PamDataUnit;
 import PamguardMVC.RawDataHolder;
 import PamguardMVC.RawDataTransforms;
 import clipgenerator.ClipDataUnit;
+import contactcollator.bearings.BearingSummary;
+import contactcollator.bearings.BearingSummaryLocalisation;
 import contactcollator.trigger.CollatorTriggerData;
 
 public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder {
@@ -18,6 +20,8 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder {
 	private CollatorTriggerData triggerData;
 	
 	private RawDataTransforms rawDataTransforms;
+
+	private BearingSummaryLocalisation bearingSummaryLocalisation;
 
 //	public CollatorDataUnit(DataUnitBaseData basicData) {
 //		super(basicData);
@@ -40,6 +44,30 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder {
 			rawDataTransforms = new RawDataTransforms(this, this);
 		}
 		return rawDataTransforms;
+	}
+
+	public void setBearingSummary(BearingSummaryLocalisation bearingSummaryLocalisation) {
+		this.bearingSummaryLocalisation = bearingSummaryLocalisation;
+		this.setLocalisation(bearingSummaryLocalisation);
+	}
+
+	/**
+	 * @return the bearingSummaryLocalisation
+	 */
+	public BearingSummaryLocalisation getBearingSummaryLocalisation() {
+		return bearingSummaryLocalisation;
+	}
+	
+	/**
+	 * @return the bearingSummary
+	 */
+	public BearingSummary getBearingSummary() {
+		if (bearingSummaryLocalisation == null) {
+			return null;
+		}
+		else {
+			return bearingSummaryLocalisation.getBearingSummary();
+		}
 	}
 
 }

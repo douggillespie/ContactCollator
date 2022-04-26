@@ -2,6 +2,7 @@ package contactcollator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import PamController.PamController;
 import PamDetection.RawDataUnit;
@@ -13,6 +14,9 @@ import PamguardMVC.PamObserver;
 import PamguardMVC.PamProcess;
 import PamguardMVC.PamRawDataBlock;
 import PamguardMVC.dataSelector.DataSelector;
+import contactcollator.bearings.BearingSummariser;
+import contactcollator.bearings.BearingSummary;
+import contactcollator.bearings.BearingSummaryLocalisation;
 import contactcollator.trigger.CollatorRateFilter;
 import contactcollator.trigger.CollatorTrigger;
 import contactcollator.trigger.CollatorTriggerData;
@@ -34,6 +38,7 @@ public class CollatorStreamProcess extends PamProcess {
 	private CollatorTrigger collatorTrigger;
 	private CollatorRateFilter collatorRateFilter;
 	private DecimatorWorker decimator;
+	private BearingSummariser bearingSummariser;
 
 	public CollatorStreamProcess(CollatorControl collatorControl, CollatorDataBlock collatorBlock, CollatorParamSet parameterSet) {
 		super(collatorControl, null);
@@ -41,6 +46,7 @@ public class CollatorStreamProcess extends PamProcess {
 		this.collatorBlock = collatorBlock;
 		this.parameterSet = parameterSet;
 		rawDataObserver = new RawDataObserver();
+		bearingSummariser = new BearingSummariser();
 		/*
 		 *  make an internal copy of the data, it will not use much memory and means we don't have to
 		 *  lock the main raw data block for too long while preparing output 
@@ -102,7 +108,7 @@ public class CollatorStreamProcess extends PamProcess {
 	private void newDetectionTrigger(CollatorTriggerData trigger, PamDataUnit dataUnit) {
 		// TODO Auto-generated method stub
 		int option = collatorRateFilter.judgeTriggerData(trigger);
-		if (option != CollatorRateFilter.TRIGGER_DONTSEND) {
+		if (option == CollatorRateFilter.TRIGGER_SENDDATA) {
 			// sort out all the data we'll be wanting and send or update output. Probably need to decimate it, etc. 
 			// can we block the datablock here ? Or do I need to clone the clone ? 
 			ArrayList<RawDataUnit> cloneCopy = null;
@@ -114,8 +120,17 @@ public class CollatorStreamProcess extends PamProcess {
 			 * still block the trigger data thread if the next stage takes more than a second or two, to may need 
 			 * to make an entirely new thread to handle these final bits of the processing?? 
 			 */
-			CollatorDataUnit newDataUnit = getFSWav(trigger, cloneCopy, 0x1);
-			synchronized (collatorBlock.getSynchLock()) {
+			CollatorDataUnit newDataUnit = createOutputData(trigger, cloneCopy, 0x1);
+			BearingSummary bearingSummary = getBearingSummary(trigger);
+			if (bearingSummary != null) {
+				newDataUnit.setBearingSummary(new BearingSummaryLocalisation(newDataUnit, bearingSummary));
+			}
+			/**
+			 * Synch adding data with collatorControl, but NOT the datablock since that will really 
+			 * mess up some other threading stuff by blocking the datablock users for too long
+			 * leading to a lock. 
+			 */
+			synchronized (collatorControl) {
 				collatorBlock.addPamData(newDataUnit);
 			}
 //			wav = rawDataCopy.
@@ -123,19 +138,59 @@ public class CollatorStreamProcess extends PamProcess {
 		
 	}
 	
-	
+	/**
+	 * Get a summary of bearing information that might be in the trigger. 
+	 * @param trigger
+	 */
+	private BearingSummary getBearingSummary(CollatorTriggerData trigger) {
+		/*
+		 * Note that if data in the trigger are super dets, then we should pull the
+		 * bearing information from all of the sub detections. 
+		 * Here we loop through the data units that made up the trigger (may only be one). 
+		 * Within bearing summariser it will loop through sub detections of these data units. 
+		 */
+		bearingSummariser.reset();
+		List<PamDataUnit> dataList = trigger.getDataList();
+		for (PamDataUnit dataUnit : dataList) {
+			bearingSummariser.addData(dataUnit);
+		}
+		return bearingSummariser.getSummary();
+	}
+
 	/**
 	 * Get waveform data from the store at full sample rate. 
 	 * @param trigger
 	 * @param cloneCopy 
 	 * @param channelMap
 	 */
-	private CollatorDataUnit getFSWav(CollatorTriggerData trigger, ArrayList<RawDataUnit> cloneCopy, int channelMap) {
+	private CollatorDataUnit createOutputData(CollatorTriggerData trigger, ArrayList<RawDataUnit> cloneCopy, int channelMap) {
 		int nChan = PamUtils.getNumChannels(channelMap);
 		double[][] wavData = new double[nChan][];
 		float fs = parameterSet.outputSampleRate;
+
+		/**
+		 * Stretch the start and end times slightly if they fit within the max length
+		 */
+		if (cloneCopy.size() == 0) {
+			return null;
+		}
+		long selectEnd = trigger.getEndTime();
+		long selectStart = trigger.getStartTime();
+		long wavEnd = cloneCopy.get(cloneCopy.size()-1).getEndTimeInMilliseconds();
+		long wavStart = cloneCopy.get(0).getTimeMilliseconds();
+		if (wavEnd > selectEnd) {
+			selectEnd += (selectEnd-selectStart)/5;
+			selectEnd = Math.min(selectEnd, wavEnd);
+		}
+		if (wavStart < selectStart) {
+			selectStart = selectStart - (long) (selectEnd-selectStart)/5;
+			selectStart = Math.max(selectStart, selectEnd-(long)(parameterSet.outputClipLengthS*1000));
+		}
+//		selectStart = wavStart;
+//		selectEnd = wavEnd;
 		// allocate more data than we need, then trim it down later. 
-		int allocatedSamples = (int) ((trigger.getEndTime()-trigger.getStartTime() + 1000) * fs / 1000.);
+		int allocatedSamples = (int) ((selectEnd-selectStart) * fs / 1000.);
+		System.out.printf("Extract %d ms from %dms available for output to %d samples\n", selectEnd-selectStart, wavEnd-wavStart, allocatedSamples);
 		for (int i = 0; i < nChan; i++) {
 			wavData[i] = new double[allocatedSamples]; 
 		}
@@ -148,10 +203,10 @@ public class CollatorStreamProcess extends PamProcess {
 //			decimator.
 //		}
 		for (RawDataUnit rawUnit : cloneCopy) {
-			if (rawUnit.getEndTimeInMilliseconds() < trigger.getStartTime()) {
+			if (rawUnit.getEndTimeInMilliseconds() < selectStart) {
 				continue;
 			}
-			if (rawUnit.getTimeMilliseconds() > trigger.getEndTime()) {
+			if (rawUnit.getTimeMilliseconds() > selectEnd) {
 				break;
 			}
 			int rawChan = PamUtils.getSingleChannel(rawUnit.getChannelBitmap());
@@ -188,11 +243,11 @@ public class CollatorStreamProcess extends PamProcess {
 			}
 			else if (channelSamples[i] < allocatedSamples) {
 				// keep the start
-				wavData[i] = Arrays.copyOf(wavData[i], allocatedSamples);
+				wavData[i] = Arrays.copyOf(wavData[i], channelSamples[i]);
 			}
 		}
 		
-		CollatorDataUnit newData = new CollatorDataUnit(clipStartMillis, channelMap, clipStartSample, parameterSet.outputSampleRate, allocatedSamples, trigger, wavData);
+		CollatorDataUnit newData = new CollatorDataUnit(clipStartMillis, channelMap, clipStartSample, parameterSet.outputSampleRate, wavData[0].length, trigger, wavData);
 				
 		return newData;
 	}

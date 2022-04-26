@@ -21,9 +21,12 @@ public class CountingTrigger implements CollatorTrigger {
 
 	@Override
 	public CollatorTriggerData newData(PamDataUnit dataUnit) {
-		clearListTo((long) (dataUnit.getTimeMilliseconds() - parameterSet.triggerIntervalS*1000));
+		int n1 = history.size();
+		clearListTo(dataUnit.getTimeMilliseconds() - (long) (parameterSet.triggerIntervalS*1000.));
+		int n2 = history.size();
 		synchronized (history) {
 			history.add(dataUnit);
+//			System.out.printf("Have %d in history, started with %d and removed %d (history length %3.1fs)\n", history.size(), n1, n1-n2, parameterSet.triggerIntervalS);
 		}
 		if (history.size() < parameterSet.triggerCount) {
 			return null;
