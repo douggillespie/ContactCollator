@@ -85,7 +85,7 @@ public class BearingSummariser {
 			angDiffs[i] = PamUtils.constrainedAngleR(allVectors.get(i).getHeading()-meanHead);
 		}
 		double stdAngle = std.getSTD(angDiffs);
-		return new BearingSummary(n, totalVector, meanHead, stdAngle, hydrophoneMap, ambiguityCount>0);
+		return new BearingSummary(n, totalVector, stdAngle, hydrophoneMap, ambiguityCount>0);
 	}
 	
 }

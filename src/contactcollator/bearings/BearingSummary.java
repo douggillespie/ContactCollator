@@ -6,15 +6,13 @@ public class BearingSummary{
 
 	private int nPoints;
 	private PamVector worldVector;
-	private double meanHeading;
 	private double stdHeading;
 	private int hydrophoneMap;
 	private boolean ambiguity;
 
-	public BearingSummary(int nPoints, PamVector meanVector, double meanHeading, double stdHeading, int hydrophoneMap, boolean ambiguity) {
+	public BearingSummary(int nPoints, PamVector meanVector, double stdHeading, int hydrophoneMap, boolean ambiguity) {
 		this.nPoints = nPoints;
 		this.worldVector = meanVector;
-		this.meanHeading = meanHeading;
 		this.stdHeading = stdHeading;
 		this.hydrophoneMap = hydrophoneMap;
 		this.ambiguity = ambiguity;
@@ -39,7 +37,7 @@ public class BearingSummary{
 	 * @return the meanHeading
 	 */
 	public double getMeanHeading() {
-		return meanHeading;
+		return worldVector.getHeading();
 	}
 
 	/**
