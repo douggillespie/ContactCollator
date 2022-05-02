@@ -5,6 +5,7 @@ import PamguardMVC.RawDataTransforms;
 import clipgenerator.ClipDataUnit;
 import contactcollator.bearings.BearingSummary;
 import contactcollator.bearings.BearingSummaryLocalisation;
+import contactcollator.bearings.HeadingHistogram;
 import contactcollator.trigger.CollatorTriggerData;
 
 /**
@@ -23,6 +24,10 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder {
 
 	private BearingSummaryLocalisation bearingSummaryLocalisation;
 
+	private String streamName;
+	
+	private HeadingHistogram headingHistogram;
+
 	/**
 	 * Real time constructor
 	 * @param timeMilliseconds
@@ -33,9 +38,10 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder {
 	 * @param triggerData
 	 * @param wavData
 	 */
-	public CollatorDataUnit(long timeMilliseconds, int channelBitmap, long startSample, float sampleRate, int durationSamples, CollatorTriggerData triggerData, double[][] wavData) {
+	public CollatorDataUnit(long timeMilliseconds, int channelBitmap, long startSample, float sampleRate, int durationSamples, CollatorTriggerData triggerData, String streamName, double[][] wavData) {
 		super(timeMilliseconds, triggerData.getStartTime(), startSample, durationSamples, channelBitmap, null, triggerData.getTriggerName(), wavData, sampleRate);
 		this.triggerData = triggerData;
+		this.streamName = streamName;
 	}
 
 	/**
@@ -49,8 +55,9 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder {
 	 * @param triggerTime
 	 * @param wavData
 	 */
-	public CollatorDataUnit(long timeMilliseconds, int channelBitmap, long startSample, float sampleRate, int durationSamples, String triggerName, long triggerTime, double[][] wavData) {
+	public CollatorDataUnit(long timeMilliseconds, int channelBitmap, long startSample, float sampleRate, int durationSamples, String triggerName, long triggerTime, String streamName, double[][] wavData) {
 		super(timeMilliseconds, triggerTime, startSample, durationSamples, channelBitmap, null, triggerName, wavData, sampleRate);
+		this.streamName = streamName;
 	}
 
 	@Override
@@ -99,6 +106,27 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder {
 	 */
 	public CollatorTriggerData getTriggerData() {
 		return triggerData;
+	}
+
+	/**
+	 * @return the streamName
+	 */
+	public String getStreamName() {
+		return streamName;
+	}
+
+	/**
+	 * @return the headingHistogram
+	 */
+	public HeadingHistogram getHeadingHistogram() {
+		return headingHistogram;
+	}
+
+	/**
+	 * @param headingHistogram the headingHistogram to set
+	 */
+	public void setHeadingHistogram(HeadingHistogram headingHistogram) {
+		this.headingHistogram = headingHistogram;
 	}
 
 }

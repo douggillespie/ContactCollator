@@ -20,6 +20,8 @@ import javax.swing.border.TitledBorder;
 import PamView.dialog.GenericSwingDialog;
 import PamView.dialog.PamDialogPanel;
 import PamView.dialog.PamGridBagContraints;
+import PamView.dialog.warn.WarnOnce;
+import PamView.panel.PamNorthPanel;
 import PamView.panel.PamPanel;
 import contactcollator.CollatorControl;
 import contactcollator.CollatorParamSet;
@@ -155,17 +157,21 @@ public class CollatorDialogPanel implements PamDialogPanel {
 			this.paramSet = paramSet;
 			setBorder(border = new TitledBorder("Unknown"));
 			this.collatorSetDisplay = new CollatorSetDisplay(paramSet, false);
-			setLayout(new GridBagLayout());
+			setLayout(new BorderLayout());
+//			GridBagConstraints c = new PamGridBagContraints();
+//			c.gridheight = 2;
+			add(collatorSetDisplay.getDialogComponent(), BorderLayout.WEST);
+			JPanel buttonPanel = new PamNorthPanel(new GridBagLayout());
+			add(buttonPanel, BorderLayout.EAST);
 			GridBagConstraints c = new PamGridBagContraints();
-			c.gridheight = 2;
-			add(collatorSetDisplay.getDialogComponent(), c);
-			c.gridheight = 1;
-			c.gridx++;
+////			c.gridheight = 2;
+//			c.gridheight = 1;
+//			c.gridx++;
 			JButton editButton;
-			add(editButton = new JButton("Edit"), c);
+			buttonPanel.add(editButton = new JButton("Edit"), c);
 			c.gridy++;
 			JButton removeButton;
-			add(removeButton = new JButton("Remove"), c);
+			buttonPanel.add(removeButton = new JButton("Remove"), c);
 
 			editButton.addActionListener(new ActionListener() {
 				@Override
@@ -199,6 +205,10 @@ public class CollatorDialogPanel implements PamDialogPanel {
 		}
 
 		protected void remove() {
+			int ans = WarnOnce.showWarning(collatorControl.getGuiFrame(), "Warning", "Are you sure you want to remove " + paramSet.setName,  WarnOnce.OK_CANCEL_OPTION);
+			if (ans != WarnOnce.OK_OPTION ) {
+				return;
+			}
 			mainPanel.remove(this);			
 			collatorDialog.pack();
 		}

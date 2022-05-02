@@ -87,6 +87,7 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 		try {
 			dos.writeLong(collatorDataUnit.triggerMilliseconds);
 			dos.writeUTF(collatorDataUnit.triggerName);
+			dos.writeUTF(collatorDataUnit.getStreamName());
 			PamDataUnit trigUnit = collatorDataUnit.getTriggerDataUnit();
 			dos.writeLong(trigUnit == null ? 0 : trigUnit.getUID());
 			dos.writeFloat(collatorDataUnit.getSourceSampleRate());
@@ -133,6 +134,7 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 		try {
 			long trigMillis = dis.readLong();
 			String trigName = dis.readUTF();
+			String streamName = dis.readUTF();
 			long trigUID = dis.readLong();
 			float fs = dis.readFloat();
 			boolean hasBearing = dis.readByte() > 0;
@@ -149,7 +151,7 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 			}
 			double[][] rawData = rawDataUtils.readWavClipInt8(dis);
 
-			cdu = new CollatorDataUnit(binaryObjectData.getTimeMilliseconds(), baseData.getChannelBitmap(), baseData.getStartSample(), fs, rawData[0].length, trigName, trigMillis, rawData);
+			cdu = new CollatorDataUnit(binaryObjectData.getTimeMilliseconds(), baseData.getChannelBitmap(), baseData.getStartSample(), fs, rawData[0].length, trigName, trigMillis, streamName, rawData);
 			cdu.setBearingSummary(new BearingSummaryLocalisation(cdu, bearingSummary));
 		} catch (IOException e) {
 			e.printStackTrace();

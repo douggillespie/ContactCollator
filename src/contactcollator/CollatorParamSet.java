@@ -48,6 +48,11 @@ public class CollatorParamSet  implements ManagedParameters, Cloneable, Serializ
 	 * Interval for trigger count in seconds. 
 	 */
 	public float triggerIntervalS = 10;
+	
+	/**
+	 * Minimum update interval in seconds for data saving, etc. 
+	 */
+	public float minimumUpdateIntervalS = 10;
 
 	@Override
 	public PamParameterSet getParameterSet() {

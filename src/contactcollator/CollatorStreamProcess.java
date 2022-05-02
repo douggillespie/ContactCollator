@@ -17,6 +17,7 @@ import PamguardMVC.dataSelector.DataSelector;
 import contactcollator.bearings.BearingSummariser;
 import contactcollator.bearings.BearingSummary;
 import contactcollator.bearings.BearingSummaryLocalisation;
+import contactcollator.bearings.HeadingHistogram;
 import contactcollator.trigger.CollatorRateFilter;
 import contactcollator.trigger.CollatorTrigger;
 import contactcollator.trigger.CollatorTriggerData;
@@ -39,6 +40,8 @@ public class CollatorStreamProcess extends PamProcess {
 	private CollatorRateFilter collatorRateFilter;
 	private DecimatorWorker decimator;
 	private BearingSummariser bearingSummariser;
+	
+	private HeadingHistogram headingHistogram;
 
 	public CollatorStreamProcess(CollatorControl collatorControl, CollatorDataBlock collatorBlock, CollatorParamSet parameterSet) {
 		super(collatorControl, null);
@@ -53,6 +56,8 @@ public class CollatorStreamProcess extends PamProcess {
 		 */		
 		rawDataCopy = new PamRawDataBlock("internal copy", this, 0, sampleRate);
 		collatorRateFilter = new CollatorRateFilter();
+		
+		headingHistogram = new HeadingHistogram(24, true);
 	}
 
 	@Override
@@ -93,6 +98,11 @@ public class CollatorStreamProcess extends PamProcess {
 	 * @param dataUnit incoming detection data unit. 
 	 */
 	private void useDetectionData(PamDataUnit dataUnit) {
+		/**
+		 * Fill the heading histrogram whether we're using this or not. 
+		 */
+		headingHistogram.addData(dataUnit);
+		
 		CollatorTriggerData trigger = collatorTrigger.newData(dataUnit);
 		if (trigger != null) {
 			// we want to do something
@@ -107,7 +117,7 @@ public class CollatorStreamProcess extends PamProcess {
 	 */
 	private void newDetectionTrigger(CollatorTriggerData trigger, PamDataUnit dataUnit) {
 		// TODO Auto-generated method stub
-		int option = collatorRateFilter.judgeTriggerData(trigger);
+		int option = collatorRateFilter.judgeTriggerData(parameterSet, trigger);
 		if (option == CollatorRateFilter.TRIGGER_SENDDATA) {
 			// sort out all the data we'll be wanting and send or update output. Probably need to decimate it, etc. 
 			// can we block the datablock here ? Or do I need to clone the clone ? 
@@ -125,6 +135,11 @@ public class CollatorStreamProcess extends PamProcess {
 			if (bearingSummary != null) {
 				newDataUnit.setBearingSummary(new BearingSummaryLocalisation(newDataUnit, bearingSummary));
 			}
+			if (headingHistogram != null) {
+				newDataUnit.setHeadingHistogram(headingHistogram.clone());
+				headingHistogram.reset();
+			}
+			
 			/**
 			 * Synch adding data with collatorControl, but NOT the datablock since that will really 
 			 * mess up some other threading stuff by blocking the datablock users for too long
@@ -133,6 +148,7 @@ public class CollatorStreamProcess extends PamProcess {
 			synchronized (collatorControl) {
 				collatorBlock.addPamData(newDataUnit);
 			}
+			collatorTrigger.reset();
 //			wav = rawDataCopy.
 		}
 		
@@ -184,13 +200,16 @@ public class CollatorStreamProcess extends PamProcess {
 		}
 		if (wavStart < selectStart) {
 			selectStart = selectStart - (long) (selectEnd-selectStart)/5;
-			selectStart = Math.max(selectStart, selectEnd-(long)(parameterSet.outputClipLengthS*1000));
 		}
+		selectStart = Math.max(selectStart, selectEnd-(long)(parameterSet.outputClipLengthS*1000));
 //		selectStart = wavStart;
 //		selectEnd = wavEnd;
 		// allocate more data than we need, then trim it down later. 
 		int allocatedSamples = (int) ((selectEnd-selectStart) * fs / 1000.);
-		System.out.printf("Extract %d ms from %dms available for output to %d samples\n", selectEnd-selectStart, wavEnd-wavStart, allocatedSamples);
+		if (allocatedSamples <= 0) {
+			return null;
+		}
+//		System.out.printf("Extract %d ms from %dms available for output to %d samples\n", selectEnd-selectStart, wavEnd-wavStart, allocatedSamples);
 		for (int i = 0; i < nChan; i++) {
 			wavData[i] = new double[allocatedSamples]; 
 		}
@@ -247,7 +266,7 @@ public class CollatorStreamProcess extends PamProcess {
 			}
 		}
 		
-		CollatorDataUnit newData = new CollatorDataUnit(clipStartMillis, channelMap, clipStartSample, parameterSet.outputSampleRate, wavData[0].length, trigger, wavData);
+		CollatorDataUnit newData = new CollatorDataUnit(clipStartMillis, channelMap, clipStartSample, parameterSet.outputSampleRate, wavData[0].length, trigger, parameterSet.setName, wavData);
 				
 		return newData;
 	}
@@ -386,6 +405,13 @@ public class CollatorStreamProcess extends PamProcess {
 	@Override
 	public String getProcessName() {
 		return parameterSet.setName;
+	}
+
+	/**
+	 * @return the parameterSet
+	 */
+	public CollatorParamSet getParameterSet() {
+		return parameterSet;
 	}
 
 }

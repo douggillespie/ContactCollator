@@ -21,6 +21,7 @@ import clipgenerator.clipDisplay.ClipDisplayUnit;
 import contactcollator.swing.CollatorDialog;
 import contactcollator.swing.CollatorDialogPanel;
 import contactcollator.swing.CollatorDisplayProvider;
+import contactcollator.swing.CollatorSummaryProvider;
 import userDisplay.UserDisplayControl;
 
 public class CollatorControl extends PamControlledUnit implements PamSettings, ClipDisplayParent {
@@ -33,13 +34,18 @@ public class CollatorControl extends PamControlledUnit implements PamSettings, C
 
 	private CollatorDisplayProvider displayProvider;
 	
+	private ArrayList<ConfigObserver> configObservers = new ArrayList<>();
+	
 	public CollatorControl(String unitName) {
 		super(unitType, unitName);
 		collatorProcess = new CollatorProcess(this);
 		addPamProcess(collatorProcess);
 		
+		// clip like display
 		displayProvider = new CollatorDisplayProvider(this);
 		UserDisplayControl.addUserDisplayProvider(displayProvider);
+		// summary (bearing histogram and last clip for each stream)
+		UserDisplayControl.addUserDisplayProvider(new CollatorSummaryProvider(this));
 		
 		PamSettingManager.getInstance().registerSettings(this);
 	}
@@ -57,7 +63,11 @@ public class CollatorControl extends PamControlledUnit implements PamSettings, C
 	}
 
 	protected void showSettingsDialog(Frame parentFrame) {
-		CollatorDialog.showDialog(this, parentFrame);
+		CollatorParams newParams = CollatorDialog.showDialog(this, parentFrame);
+		if (newParams != null) {
+			collatorProcess.setupProcess();
+			notifyConfigObservers();
+		}
 	}
 
 	@Override
@@ -151,5 +161,39 @@ public class CollatorControl extends PamControlledUnit implements PamSettings, C
 		// TODO Auto-generated method stub
 		
 	}
+	
+	/**
+	 * Add a configuration observer to get updates whenever the configuration is changed. 
+	 * @param configObserver
+	 */
+	public void addConfigObserver(ConfigObserver configObserver) {
+		configObservers.add(configObserver);
+	}
+	
+	/**
+	 * Remove a configuration observer
+	 * @param configObserver
+	 */
+	public void removeConfigObserver(ConfigObserver configObserver) {
+		configObservers.remove(configObserver);
+	}
+	
+	/**
+	 * Notify configuration observers
+	 */
+	public void notifyConfigObservers() {
+		for (ConfigObserver co : configObservers) {
+			co.configUpdate();
+		}
+	}
+
+	/**
+	 * @return the collatorProcess
+	 */
+	public CollatorProcess getCollatorProcess() {
+		return collatorProcess;
+	}
+	
+	
 
 }

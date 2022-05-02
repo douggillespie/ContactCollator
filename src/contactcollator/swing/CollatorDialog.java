@@ -25,7 +25,7 @@ public class CollatorDialog extends PamDialog {
 		collatorDialog.cancelled = false;
 		collatorDialog.setParams();
 		collatorDialog.setVisible(true);
-		return null;
+		return collatorDialog.cancelled ? null : collatorControl.getCollatorParams();
 	}
 
 	private void setParams() {

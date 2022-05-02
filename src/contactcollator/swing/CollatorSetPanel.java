@@ -42,6 +42,8 @@ public class CollatorSetPanel implements PamDialogPanel {
 	
 	private JTextField sourceSampleRate, outputSampleRate, outputSeconds;
 	
+	private JTextField minupdateInterval;
+	
 	private SourcePanel detectionSourcePanel, rawDataSourcePanel;
 
 	private CollatorControl collatorControl;
@@ -125,7 +127,7 @@ public class CollatorSetPanel implements PamDialogPanel {
 
 		// stuff for the output panel
 		c = new PamGridBagContraints();
-		c.gridwidth = 4;
+		c.gridwidth = 5;
 		rawDataSourcePanel = new SourcePanel(collatorDialog, RawDataUnit.class, false, true);
 		outPanel.add(rawDataSourcePanel.getPanel(), c);
 		JButton defaultButton = new JButton("Default");
@@ -139,7 +141,9 @@ public class CollatorSetPanel implements PamDialogPanel {
 		outPanel.add(sourceSampleRate = new JTextField(5), c);
 		sourceSampleRate.setEditable(false);
 		c.gridx++;
-		outPanel.add(new JLabel(" Hz,  Decimate to ", JLabel.RIGHT), c);
+		outPanel.add(new JLabel(" Hz,", JLabel.LEFT), c);
+		c.gridx++;
+		outPanel.add(new JLabel(" Decimate to ", JLabel.RIGHT), c);
 		c.gridx++;
 		outPanel.add(outputSampleRate = new JTextField(5), c);
 		c.gridx++;
@@ -150,7 +154,13 @@ public class CollatorSetPanel implements PamDialogPanel {
 		c.gridx++;
 		outPanel.add(outputSeconds = new JTextField(5), c);
 		c.gridx++;
-		outPanel.add(new JLabel(" s ", JLabel.LEFT), c);
+		outPanel.add(new JLabel(" s,", JLabel.LEFT), c);
+		c.gridx++;
+		outPanel.add(new JLabel(" Min send interval ", JLabel.RIGHT), c);
+		c.gridx++;
+		outPanel.add(minupdateInterval = new JTextField(5), c);
+		c.gridx++;
+		outPanel.add(new JLabel(" s", JLabel.LEFT), c);
 		
 		
 		
@@ -176,6 +186,7 @@ public class CollatorSetPanel implements PamDialogPanel {
 		sourceSampleRate.setToolTipText("Sample rate of source data");
 		outputSampleRate.setToolTipText("Enter a lower sample rate if you want data decimated prior to output");
 		outputSeconds.setToolTipText("Clip length in seconds (enter 0 for no output clip data)");
+		minupdateInterval.setToolTipText("Minimum updated interval for data output");
 	}
 
 
@@ -282,6 +293,7 @@ public class CollatorSetPanel implements PamDialogPanel {
 			outputSampleRate.setText(String.format("%d", collatorParamSet.outputSampleRate));
 		}
 		outputSeconds.setText(String.format("%3.1f", collatorParamSet.outputClipLengthS));
+		minupdateInterval.setText(String.format("%3.1f", collatorParamSet.minimumUpdateIntervalS));
 		outputSourceChanged();
 	}
 
@@ -333,6 +345,12 @@ public class CollatorSetPanel implements PamDialogPanel {
 		}
 		catch (NumberFormatException e) {
 			return collatorDialog.showWarning("Invalid or empty clip length");
+		}
+		try {
+			collatorParamSet.minimumUpdateIntervalS = Float.valueOf(minupdateInterval.getText());
+		}
+		catch (NumberFormatException e) {
+			return collatorDialog.showWarning("Invalid or empty minimum update interval");
 		}
 		
 		return true;

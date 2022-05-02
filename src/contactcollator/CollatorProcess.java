@@ -67,7 +67,7 @@ public class CollatorProcess extends PamProcess {
 	/**
 	 * Set up a process for every set. try to avoid adding or removing any unnecessarily. 
 	 */
-	private void organiseStreamProcesses() {
+	private synchronized void organiseStreamProcesses() {
 		ArrayList<CollatorParamSet> sets = collatorControl.getCollatorParams().parameterSets;
 		// go through the sets and add any which aren't there. 
 		for (CollatorParamSet aSet : sets) {

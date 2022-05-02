@@ -14,12 +14,15 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.border.TitledBorder;
 
+import PamController.PamController;
+import PamUtils.FrequencyFormat;
 import PamView.component.PamSettingsIconButton;
 import PamView.dialog.PamDialogPanel;
 import PamView.dialog.PamGridBagContraints;
 import PamView.dialog.PamTextDisplay;
 import PamView.dialog.ScrollingPamLabel;
 import PamView.dialog.SourcePanel;
+import PamguardMVC.PamDataBlock;
 import contactcollator.CollatorParamSet;
 
 /**
@@ -44,7 +47,7 @@ public class CollatorSetDisplay implements PamDialogPanel {
 	
 	private DisplayField sourceSampleRate, outputSampleRate, outputSeconds;
 	
-	private DisplayField detectionSource, rawDataSource;
+	private DisplayField detectionSource, rawDataSource, dataOutput;
 	
 //	private static String longEmptyString = "                              "; //30
 //	private static String shortEmptyString = "      "; // 6
@@ -81,6 +84,13 @@ public class CollatorSetDisplay implements PamDialogPanel {
 		c.gridx++;
 		c.gridwidth = 3;
 		mainPanel.add(rawDataSource = new DisplayField(30), c);
+		c.gridx = 0;
+		c.gridy++;
+		c.gridwidth = 1;
+		mainPanel.add(new JLabel(" Data output: ", JLabel.RIGHT), c);
+		c.gridx++;
+		c.gridwidth = 3;
+		mainPanel.add(dataOutput = new DisplayField(30), c);
 		
 //		SwingUtilities.invokeLater(new Runnable() {
 //			
@@ -121,7 +131,20 @@ public class CollatorSetDisplay implements PamDialogPanel {
 		name.setText(collatorParamSet.setName);
 		speciesCode.setText(collatorParamSet.speciesCode);
 		detectionSource.setText(collatorParamSet.detectionSource);
-		rawDataSource.setText(collatorParamSet.rawDataSource);
+		PamDataBlock sourceData = PamController.getInstance().getDataBlockByLongName(collatorParamSet.rawDataSource);
+		if (sourceData == null) {
+			rawDataSource.setText("Unknown: " + collatorParamSet.rawDataSource);
+		}
+		else {
+			String name = sourceData.getDataName();
+			if (collatorParamSet.outputSampleRate != sourceData.getSampleRate()) {
+				name += String.format(", resampled at %s", FrequencyFormat.formatFrequency(collatorParamSet.outputSampleRate, true));
+			}
+			rawDataSource.setText(name);
+		}
+//		data output info
+		String str = String.format("%3.1fs clip, Minimum output interval %3.1fs", collatorParamSet.outputClipLengthS, collatorParamSet.minimumUpdateIntervalS);
+		dataOutput.setText(str);
 		
 		Component rp = mainPanel.getTopLevelAncestor();
 		if (rp instanceof JDialog) {
