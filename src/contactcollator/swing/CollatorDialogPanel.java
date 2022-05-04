@@ -205,9 +205,11 @@ public class CollatorDialogPanel implements PamDialogPanel {
 		}
 
 		protected void remove() {
-			int ans = WarnOnce.showWarning(collatorControl.getGuiFrame(), "Warning", "Are you sure you want to remove " + paramSet.setName,  WarnOnce.OK_CANCEL_OPTION);
-			if (ans != WarnOnce.OK_OPTION ) {
-				return;
+			if (paramSet != null) { 
+				int ans = WarnOnce.showWarning(collatorControl.getGuiFrame(), "Warning", "Are you sure you want to remove " + paramSet.setName,  WarnOnce.OK_CANCEL_OPTION);
+				if (ans != WarnOnce.OK_OPTION ) {
+					return;
+				}
 			}
 			mainPanel.remove(this);			
 			collatorDialog.pack();

@@ -1,0 +1,28 @@
+<html>
+
+<head>
+	<LINK href="../pamHelpStylesheet.css" type="text/css" rel="STYLESHEET">
+	<title>Contact Collator</title>
+</head>
+
+<body>
+
+	<h1>Contact Collator</h1>
+	<p>The Contact Collator module is designed to provide a common output from multiple detectors and classifiers and to provide 
+	a “one-stop” data stream summarising recent detector activity. It can be configured to take input from multiple detectors and 
+	apply data selection to those data, for example to select different types of click events from the click detector or the click 
+	train detector. When a threshold number of detections occur for within a user defined time frame, new “Contact” data are output 
+	for that detection stream. </p>
+<p>Each Contact output data consists of the following information:<p>
+<ol>
+<li>The name of the detector that created the contact</li>
+<li>A list of detections that formed the contact</li>
+<li>An audio clip of data from the last detection</li>
+<li>A summary of bearing information to detection in the form of a mean and standard deviation of bearings in detections 
+that formed that contact. If the input data contain multiple other ‘sub’ detections (e.g. clicks within a click train detection), 
+the bearing information is extracted for each sub detection.</li> 
+<li>A bearing histogram for the input data, i.e. data to form a polar histogram for the direction of arrival to the detections</li>
+
+</ol>
+	
+</body>

@@ -14,8 +14,7 @@ public class CollatorPlugin implements PamPluginInterface {
 
 	@Override
 	public String getHelpSetName() {
-		// TODO Auto-generated method stub
-		return null;
+		return "contactcollator/help/ContactCollatorHelpProj.hs";
 	}
 
 	@Override

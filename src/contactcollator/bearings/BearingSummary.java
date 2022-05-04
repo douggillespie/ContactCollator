@@ -34,14 +34,14 @@ public class BearingSummary{
 	}
 
 	/**
-	 * @return the meanHeading
+	 * @return the meanHeading in radians clockwise from ahead. 
 	 */
 	public double getMeanHeading() {
 		return worldVector.getHeading();
 	}
 
 	/**
-	 * @return the stdHeading
+	 * @return the Standard Deviation of the headings in radians. 
 	 */
 	public double getStdHeading() {
 		return stdHeading;

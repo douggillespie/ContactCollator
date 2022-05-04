@@ -358,7 +358,7 @@ public class CollatorStreamProcess extends PamProcess {
 			rawDataBlock.addObserver(rawDataObserver, false);
 			rawDataCopy.setChannelMap(rawDataBlock.getChannelMap());
 			rawDataCopy.setSampleRate(rawDataBlock.getSampleRate(), false);
-			rawDataCopy.setNaturalLifetimeMillis((int) ((parameterSet.outputClipLengthS*1.1) * 1000));
+			rawDataCopy.setNaturalLifetimeMillis((int) ((parameterSet.outputClipLengthS*1.1) * 1000)+20000);
 			if (parameterSet.outputSampleRate == rawDataBlock.getSampleRate()) {
 				decimator = null;
 			}

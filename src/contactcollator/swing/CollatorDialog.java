@@ -18,6 +18,7 @@ public class CollatorDialog extends PamDialog {
 		super(parentFrame, collatorControl.getUnitName(), false);
 		collatorDialogPanel = new CollatorDialogPanel(collatorControl, this);
 		setDialogComponent(collatorDialogPanel.getDialogComponent());
+		setHelpPoint("docs.contactcollator");
 	}
 	
 	public static CollatorParams showDialog(CollatorControl collatorControl, Window parentFrame) {
