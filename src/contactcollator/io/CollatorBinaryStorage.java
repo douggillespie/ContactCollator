@@ -6,6 +6,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import PamguardMVC.DataUnitBaseData;
 import PamguardMVC.PamDataBlock;
@@ -20,6 +21,9 @@ import contactcollator.CollatorControl;
 import contactcollator.CollatorDataUnit;
 import contactcollator.bearings.BearingSummary;
 import contactcollator.bearings.BearingSummaryLocalisation;
+import contactcollator.bearings.HeadingHistogram;
+import contactcollator.bearings.HeadingHistogramIO;
+import contactcollator.trigger.CollatorTriggerData;
 import pamMaths.PamVector;
 
 public class CollatorBinaryStorage extends BinaryDataSource {
@@ -32,11 +36,14 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 	
 	private ByteArrayOutputStream bos;
 	
-	RawDataUtils rawDataUtils = new RawDataUtils();
+	private RawDataUtils rawDataUtils = new RawDataUtils();
+	
+	private HeadingHistogramIO headingHistogramIO;
 
 	public CollatorBinaryStorage(CollatorControl collatorControl, PamDataBlock parentDataBlock) {
 		super(parentDataBlock);
 		this.collatorControl = collatorControl;
+		headingHistogramIO = new HeadingHistogramIO();
 	}
 
 	@Override
@@ -88,9 +95,17 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 			dos.writeLong(collatorDataUnit.triggerMilliseconds);
 			dos.writeUTF(collatorDataUnit.triggerName);
 			dos.writeUTF(collatorDataUnit.getStreamName());
-			PamDataUnit trigUnit = collatorDataUnit.getTriggerDataUnit();
-			dos.writeLong(trigUnit == null ? 0 : trigUnit.getUID());
+//			PamDataUnit trigUnit = collatorDataUnit.getTriggerDataUnit(); %only in clip, not used in Contacts. make list instead
+//			dos.writeLong(trigUnit == null ? 0 : trigUnit.getUID());
 			dos.writeFloat(collatorDataUnit.getSourceSampleRate());
+			CollatorTriggerData triggerData = collatorDataUnit.getTriggerData();
+			List<PamDataUnit> triggerList = triggerData.getDataList(); // does this need synchronising? OK if we don't use an iterator, so what if it grows!
+			int nTrig = triggerList != null ? triggerList.size() : 0;
+			dos.writeShort(nTrig);			
+			for (int i = 0; i < nTrig; i++) {
+				dos.writeLong(triggerList.get(i).getUID());
+			}
+			
 			/*
 			 * And do heading information, since that's reasonably essential.
 			 */
@@ -103,11 +118,11 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 				PamVector vec = bearingSummary.getWorldVector(); 
 				double head = vec.getHeading();
 				double slant = vec.getPitch();
-				int n = bearingSummary.getnPoints();
+				int nBear = bearingSummary.getnPoints();
 				int phones = bearingSummary.getHydrophoneMap();
 				double stdHead = bearingSummary.getStdHeading();
 				int ambiguity = bearingSummary.isAmbiguity() ? 1 : 0;
-				dos.writeShort(n);
+				dos.writeShort(nBear);
 				dos.writeInt(phones);
 				dos.writeByte(ambiguity);
 				dos.writeFloat((float) head);
@@ -115,6 +130,14 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 				dos.writeFloat((float) stdHead);
 			}
 			
+//			% and the bearing histogram
+			HeadingHistogram headingHist = collatorDataUnit.getHeadingHistogram();
+			if (headingHist == null) {
+				dos.writeByte(0);
+			}
+			else {
+				headingHistogramIO.writeHeadingHist(dos, headingHist);
+			}
 			
 			
 			rawDataUtils.writeWaveClipInt8(dos, collatorDataUnit.getRawData());
@@ -130,6 +153,7 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 	public PamDataUnit sinkData(BinaryObjectData binaryObjectData, BinaryHeader bh, int moduleVersion) {
 		DataInputStream dis = new DataInputStream(new ByteArrayInputStream(binaryObjectData.getData()));
 		BearingSummary bearingSummary = null;
+		HeadingHistogram headingHist = null;
 		CollatorDataUnit cdu = null;
 		try {
 			long trigMillis = dis.readLong();
@@ -149,10 +173,17 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 				PamVector vec = PamVector.fromHeadAndSlant(head, slant);
 				bearingSummary = new BearingSummary(n, vec, headSTD, phones, ambiguity);
 			}
+			boolean hasHeadingHist = dis.readByte() > 0;
+			if (hasHeadingHist) {
+				headingHist = headingHistogramIO.readHeadingHist(dis);
+			}
+			
 			double[][] rawData = rawDataUtils.readWavClipInt8(dis);
 
 			cdu = new CollatorDataUnit(binaryObjectData.getTimeMilliseconds(), baseData.getChannelBitmap(), baseData.getStartSample(), fs, rawData[0].length, trigName, trigMillis, streamName, rawData);
 			cdu.setBearingSummary(new BearingSummaryLocalisation(cdu, bearingSummary));
+			cdu.setHeadingHistogram(headingHist);
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;

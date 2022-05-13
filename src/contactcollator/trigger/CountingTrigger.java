@@ -1,5 +1,6 @@
 package contactcollator.trigger;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -38,7 +39,7 @@ public class CountingTrigger implements CollatorTrigger {
 			 */
 			long start = history.get(0).getTimeMilliseconds();
 			long end = dataUnit.getEndTimeInMilliseconds();
-			List<PamDataUnit> histClone = new LinkedList<>(history);
+			List<PamDataUnit> histClone = new ArrayList<>(history);
 			CollatorTriggerData trigData = new CollatorTriggerData(start, end, parameterSet.detectionSource, histClone);
 			return trigData;
 		}

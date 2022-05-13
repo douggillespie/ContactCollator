@@ -65,18 +65,28 @@ public class HeadingHistogram implements Cloneable, Serializable {
 	private double maximumAngle; 
 	
 	/**
-	 * Create a heading histrogram with a given number of bearing bins. 
+	 * Create an empty heading histogram with a given number of bearing bins. 
 	 * @param nBins number of bearing bins
 	 * @param zeroCentre centre the first bearing bin at 0, otherwise it will start at 0. 
 	 */
 	public HeadingHistogram(int nBins, boolean zeroCentre) {
+		this(nBins, zeroCentre, new double[nBins]);
+	}
+
+	/**
+	 * Create a heading histogram using existing data. 
+	 * @param nBins number of bearing bins
+	 * @param zeroCentre centre the first bearing bin at 0, otherwise it will start at 0. 
+	 * @param data data array, must be same length as nBins
+	 */
+	public HeadingHistogram(int nBins, boolean zeroCentre, double[] data) {
 		this.nBins = nBins;
 		this.zeroCentre = zeroCentre;
-		data = new double[nBins];
+		this.data = data;
 		calculateEdges();
 	}
 
-	
+
 	/**
 	 * Work out the bin edges. 
 	 */
