@@ -210,7 +210,10 @@ public class CollatorSetPanel implements PamDialogPanel {
 			return;
 		}
 		selName = collatorControl.getDataSelectorName(selName);
-		DataSelector dataSelector = detectionSource.getDataSelector(selName, false);
+		/*
+		 * New dataselect options to include annotations optoins, but not superdetections. 
+		 */
+		DataSelector dataSelector = detectionSource.getDataSelector(selName, false, null, true, false);
 		if (dataSelector == null) {
 			return;
 		}
@@ -233,7 +236,7 @@ public class CollatorSetPanel implements PamDialogPanel {
 			sourceSampleRate.setText(null);
 		}
 		else {
-			sourceSampleRate.setText(String.format("%5.0f", out.getSampleRate()));
+			sourceSampleRate.setText(String.format("%1.0f", out.getSampleRate()));
 			String txt = outputSampleRate.getText();
 			try {
 				float val = Float.valueOf(txt);
@@ -257,7 +260,7 @@ public class CollatorSetPanel implements PamDialogPanel {
 //		while (dataBlock != null) {
 //			if (RawDataUnit.class.isAssignableFrom(dataBlock.getUnitClass())) {
 				rawDataSourcePanel.setSource(dataBlock);
-				outputSampleRate.setText(String.format("%5.0f", dataBlock.getSampleRate()));
+				outputSampleRate.setText(String.format("%1.0f", dataBlock.getSampleRate()));
 //				break;
 //			}
 //		}
@@ -288,12 +291,12 @@ public class CollatorSetPanel implements PamDialogPanel {
 		detectionSourcePanel.setSource(collatorParamSet.detectionSource);
 		rawDataSourcePanel.setSource(collatorParamSet.rawDataSource);
 		triggerCount.setText(String.format("%d", collatorParamSet.triggerCount));
-		triggerSeconds.setText(String.format("%3.1f", collatorParamSet.triggerIntervalS));
+		triggerSeconds.setText(String.format("%1.1f", collatorParamSet.triggerIntervalS));
 		if (collatorParamSet.outputSampleRate > 0) {
 			outputSampleRate.setText(String.format("%d", collatorParamSet.outputSampleRate));
 		}
-		outputSeconds.setText(String.format("%3.1f", collatorParamSet.outputClipLengthS));
-		minupdateInterval.setText(String.format("%3.1f", collatorParamSet.minimumUpdateIntervalS));
+		outputSeconds.setText(String.format("%1.1f", collatorParamSet.outputClipLengthS));
+		minupdateInterval.setText(String.format("%1.1f", collatorParamSet.minimumUpdateIntervalS));
 		outputSourceChanged();
 	}
 
@@ -331,7 +334,9 @@ public class CollatorSetPanel implements PamDialogPanel {
 		
 		float rawFS = 0;
 		try {
+			String t = outputSampleRate.getText();
 			collatorParamSet.outputSampleRate = Integer.valueOf(outputSampleRate.getText());
+			t = sourceSampleRate.getText();
 			rawFS = Integer.valueOf(sourceSampleRate.getText());
 		}
 		catch (NumberFormatException e) {

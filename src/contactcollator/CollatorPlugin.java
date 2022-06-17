@@ -65,8 +65,7 @@ public class CollatorPlugin implements PamPluginInterface {
 
 	@Override
 	public String getDescription() {
-		// TODO Auto-generated method stub
-		return null;
+		return CollatorControl.unitType;
 	}
 
 	@Override
