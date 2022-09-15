@@ -234,16 +234,23 @@ public class CollatorSetPanel implements PamDialogPanel {
 		PamDataBlock out = rawDataSourcePanel.getSource();
 		if (out == null) {
 			sourceSampleRate.setText(null);
+			return;
 		}
 		else {
 			sourceSampleRate.setText(String.format("%1.0f", out.getSampleRate()));
 			String txt = outputSampleRate.getText();
 			try {
 				float val = Float.valueOf(txt);
+				if (val > out.getSampleRate()) {
+					outputSampleRate.setText(sourceSampleRate.getText());
+				}
 			}
 			catch (Exception e) {
 				outputSampleRate.setText(sourceSampleRate.getText()); // set the same if nothing is there. 
 			}
+//			try {
+//				double deciSampleRate = Double.valueOf(dec)
+//			}
 		}
 	}
 

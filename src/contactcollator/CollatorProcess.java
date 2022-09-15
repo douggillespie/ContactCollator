@@ -9,6 +9,7 @@ import PamController.PamController;
 import PamUtils.PamUtils;
 import PamguardMVC.PamDataBlock;
 import PamguardMVC.PamProcess;
+import contactcollator.io.CollatorLogging;
 import contactcollator.swing.CollatorOverlayGraphics;
 
 public class CollatorProcess extends PamProcess {
@@ -24,6 +25,7 @@ public class CollatorProcess extends PamProcess {
 		this.collatorControl = collatorControl;
 		collatorDataBlock = new CollatorDataBlock(collatorControl.getUnitName(), this, 0);
 		collatorDataBlock.setOverlayDraw(new CollatorOverlayGraphics(collatorDataBlock));
+		collatorDataBlock.SetLogging(new CollatorLogging(collatorControl, collatorDataBlock));
 		addOutputDataBlock(collatorDataBlock);
 	}
 

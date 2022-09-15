@@ -131,6 +131,9 @@ public class CollatorStreamProcess extends PamProcess {
 			 * to make an entirely new thread to handle these final bits of the processing?? 
 			 */
 			CollatorDataUnit newDataUnit = createOutputData(trigger, cloneCopy, 0x1);
+			if (newDataUnit == null) {
+				return;
+			}
 			BearingSummary bearingSummary = getBearingSummary(trigger);
 			if (bearingSummary != null) {
 				newDataUnit.setBearingSummary(new BearingSummaryLocalisation(newDataUnit, bearingSummary));
