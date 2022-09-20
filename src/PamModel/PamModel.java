@@ -38,6 +38,7 @@ import Acquisition.DaqSystemInterface;
 import Array.ArraySidePanelControl;
 import clickDetector.ClickDetection;
 import contactcollator.CollatorControl;
+import contactcollator.CollatorPlugin;
 import dataMap.DataMapControl;
 import detectiongrouplocaliser.DetectionGroupControl;
 import effortmonitor.EffortControl;
@@ -461,10 +462,10 @@ final public class PamModel implements PamModelInterface, PamSettings {
 		mi.setModulesMenuGroup(utilitiesGroup);
 		mi.setMaxNumber(1);
 
-		mi = PamModuleInfo.registerControlledUnit(CollatorControl.class.getName(), CollatorControl.unitType);
-		mi.setToolTipText("Collate data with clips");
-		mi.setModulesMenuGroup(utilitiesGroup);
-		mi.setMaxNumber(1);
+//		mi = PamModuleInfo.registerControlledUnit(CollatorControl.class.getName(), CollatorControl.unitType);
+//		mi.setToolTipText("Collate data with clips");
+//		mi.setModulesMenuGroup(utilitiesGroup);
+//		mi.setMaxNumber(1);
 		
 		
 
@@ -1074,6 +1075,8 @@ final public class PamModel implements PamModelInterface, PamSettings {
 		// clear the current list
 		pluginList.clear();
 		daqList.clear();
+		
+		pluginList.add(new CollatorPlugin());
 
 		// Load up whatever default classloader was used to create this class.  Must use the same classloader
 		// for all plugins, or else we will not be able to create proper dependencies between them or be able
@@ -1284,7 +1287,7 @@ final public class PamModel implements PamModelInterface, PamSettings {
 						
 						// instantiate the plugin control class using the custom class loader
 						try {
-							File classFile = new File(pf.getJarFile());		
+//							File classFile = new File(pf.getJarFile());		
 							//URLClassLoader cl = new URLClassLoader(new URL[]{classFile.toURI().toURL()});
 //							mi = PamModuleInfo.registerControlledUnit(pf.getClassName(), pf.getDescription(),cl);
 							mi = PamModuleInfo.registerControlledUnit(pf.getClassName(), pf.getDescription(),classLoader);

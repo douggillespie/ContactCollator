@@ -4,12 +4,8 @@
 <toc version="1.0">
  <tocitem text="Utilities ">
   <tocitem text="Contact Collator " target="docs.contactcollator">
-   <tocitem text="Overview " target="docs.contactcollator" image="images.popup"/>
+   <tocitem text="Overview " target="docs.contactcollator" image="topic"/>
 
   </tocitem>
-  <tocitem text="images "/>
-
-  <tocitem text="Contact collator "/>
-
  </tocitem>
 </toc>

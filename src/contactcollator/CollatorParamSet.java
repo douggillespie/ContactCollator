@@ -17,7 +17,7 @@ public class CollatorParamSet  implements ManagedParameters, Cloneable, Serializ
 	/**
 	 * Species code to pass on with output data
 	 */
-	public String speciesCode;
+//	public String speciesCode;
 	
 	/**
 	 * Detector source (any detector)

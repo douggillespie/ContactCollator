@@ -22,7 +22,36 @@
 that formed that contact. If the input data contain multiple other ‘sub’ detections (e.g. clicks within a click train detection), 
 the bearing information is extracted for each sub detection.</li> 
 <li>A bearing histogram for the input data, i.e. data to form a polar histogram for the direction of arrival to the detections</li>
-
 </ol>
+
+<h2>Installation</h2>
+<p>The Contact Collator is a plugin module and does not come as a standard part of a PAMGuard installation. To add the Contact Collator to an installation, 
+you should add the latest ContactCollator_**_**.jar file to the plugins folder of your PAMGuard installation.</p>
+
+<h2>Configuration</h2>
+<p>Once installed, to add a Contact Collator to a PAMGuard configuration, it can be selected from the 'Add Modules / Utilities' menu.</p>
+<p>You should then configure the Contact Collator from the 'Settings / Contact Collator Settings ...' menu.</p>
+<p>You can add any number of detector streams to the contact collator, depending on which other PAMGuard modules have been configured. To add a new stream, press the 'Add Stream' button
+and a dialog will appear for you to fill in with the name, detection source and other information about the output stream.</p>
+
+<center><img src="images/ccconfig2.png"><br>
+<em>Figure 1. Configuration dialog for a data stream</em></center>
+<br>
+<p>If the detection source has a data filter, which allows you to only select certain types of detection (e.g. a particular type of classified click, or whistles from within a certain frequency range,
+then the settings button to the right of the Detection Source drop down will be enables. Data selection settings are specific to each detector type and may depend on how that detector was configured.</p>
+<p>The output from the contact collator includes short waveform clips of data. Select a data source for this, which will normally be the raw data from the sound acquisition module, however, if you 
+have decimated data to a lower frequency, you may want to use the decimated data. Set the clip length and the minimum time period between sending outputs. </p>
+ 
+
+
+<center><img src="images/ccconfig1.png"><br>
+<em>figure 2. Configuration dialog for multiple data streams</em></center>
+<br>
+
+<h2>Display</h2>
 	
+	<p>A summary display, which shows the last clip and bearing information for each detector stream can be added to any PAMGuard user display from the user display's menu.
+<center><img src="images/ccdisplay.png"><br>
+<em>Figure 1. Configuration dialog for a data stream</em></center>
+<br>
 </body>

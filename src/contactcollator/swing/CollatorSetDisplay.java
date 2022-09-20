@@ -37,7 +37,7 @@ public class CollatorSetDisplay implements PamDialogPanel {
 	
 	private CollatorParamSet collatorParamSet;
 	
-	private DisplayField name, speciesCode;
+	private DisplayField name;//, speciesCode;
 	
 	private TitledBorder titledBorder;
 	
@@ -66,10 +66,10 @@ public class CollatorSetDisplay implements PamDialogPanel {
 		mainPanel.add(new JLabel("Name: ", JLabel.RIGHT), c);
 		c.gridx++;
 		mainPanel.add(name = new DisplayField(30), c);
-		c.gridx++;
-		mainPanel.add(new JLabel("  Code: ", JLabel.RIGHT), c);
-		c.gridx++;
-		mainPanel.add(speciesCode = new DisplayField(3), c);
+//		c.gridx++;
+//		mainPanel.add(new JLabel("  Code: ", JLabel.RIGHT), c);
+//		c.gridx++;
+//		mainPanel.add(speciesCode = new DisplayField(3), c);
 		c.gridx = 0;
 		c.gridy++;
 		c.gridwidth = 1;
@@ -129,7 +129,7 @@ public class CollatorSetDisplay implements PamDialogPanel {
 //		titledBorder.setTitle(collatorParamSet.setName);
 //		mainPanel.setBorder(new TitledBorder(collatorParamSet.setName));
 		name.setText(collatorParamSet.setName);
-		speciesCode.setText(collatorParamSet.speciesCode);
+//		speciesCode.setText(collatorParamSet.speciesCode);
 		detectionSource.setText(collatorParamSet.detectionSource);
 		PamDataBlock sourceData = PamController.getInstance().getDataBlockByLongName(collatorParamSet.rawDataSource);
 		if (sourceData == null) {

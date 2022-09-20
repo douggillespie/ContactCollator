@@ -34,7 +34,7 @@ public class CollatorSetPanel implements PamDialogPanel {
 	
 	private CollatorParamSet collatorParamSet;
 	
-	private JTextField name, speciesCode;
+	private JTextField name;//, speciesCode;
 	
 	private PamSettingsIconButton filterButton;
 	
@@ -79,10 +79,10 @@ public class CollatorSetPanel implements PamDialogPanel {
 		namePanel.add(new JLabel("Name: ", JLabel.RIGHT), c);
 		c.gridx++;
 		namePanel.add(name = new JTextField(15), c);
-		c.gridx++;
-		namePanel.add(new JLabel("  Code: ", JLabel.RIGHT), c);
-		c.gridx++;
-		namePanel.add(speciesCode = new JTextField(3), c);
+//		c.gridx++;
+//		namePanel.add(new JLabel("  Code: ", JLabel.RIGHT), c);
+//		c.gridx++;
+//		namePanel.add(speciesCode = new JTextField(3), c);
 		c.gridx = 0;
 		c.gridy++;
 		c.gridwidth = 2;
@@ -178,7 +178,7 @@ public class CollatorSetPanel implements PamDialogPanel {
 		});
 		
 		name.setToolTipText("Enter a user friendly name for this output data set");
-		speciesCode.setToolTipText("Enter a shorter code which will be saved with data");
+//		speciesCode.setToolTipText("Enter a shorter code which will be saved with data");
 		detectionSourcePanel.getPanel().setToolTipText("Trigger data source");
 		triggerCount.setToolTipText("Number of detections required to trigger output");
 		triggerSeconds.setToolTipText("Trigger count period in seconds");
@@ -294,7 +294,7 @@ public class CollatorSetPanel implements PamDialogPanel {
 			collatorParamSet = new CollatorParamSet();
 		}
 		name.setText(collatorParamSet.setName);
-		speciesCode.setText(collatorParamSet.speciesCode);
+//		speciesCode.setText(collatorParamSet.speciesCode);
 		detectionSourcePanel.setSource(collatorParamSet.detectionSource);
 		rawDataSourcePanel.setSource(collatorParamSet.rawDataSource);
 		triggerCount.setText(String.format("%d", collatorParamSet.triggerCount));
@@ -316,10 +316,10 @@ public class CollatorSetPanel implements PamDialogPanel {
 		if (collatorParamSet.setName == null || collatorParamSet.setName.length() == 0) {
 			return collatorDialog.showWarning("You must enter a name for the set");
 		}
-		collatorParamSet.speciesCode = speciesCode.getText();
-		if (collatorParamSet.speciesCode == null || collatorParamSet.speciesCode.length() == 0) {
-			return collatorDialog.showWarning("You must enter a species code for the set");
-		}
+//		collatorParamSet.speciesCode = speciesCode.getText();
+//		if (collatorParamSet.speciesCode == null || collatorParamSet.speciesCode.length() == 0) {
+//			return collatorDialog.showWarning("You must enter a species code for the set");
+//		}
 		collatorParamSet.detectionSource = detectionSourcePanel.getSourceName();
 		if (collatorParamSet.detectionSource == null) {
 			return collatorDialog.showWarning("You must enter a detection source");
