@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 import PamModel.parametermanager.ManagedParameters;
 import PamModel.parametermanager.PamParameterSet;
+import PamModel.parametermanager.PamParameterSet.ParameterSetType;
 
 public class CollatorParamSet  implements ManagedParameters, Cloneable, Serializable {
 
@@ -56,7 +57,7 @@ public class CollatorParamSet  implements ManagedParameters, Cloneable, Serializ
 
 	@Override
 	public PamParameterSet getParameterSet() {
-		return PamParameterSet.autoGenerate(this);
+		return PamParameterSet.autoGenerate(this, ParameterSetType.DETECTOR);
 	}
 
 	@Override

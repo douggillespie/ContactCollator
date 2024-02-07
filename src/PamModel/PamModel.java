@@ -1144,30 +1144,11 @@ final public class PamModel implements PamModelInterface, PamSettings {
 					    // to add that URL to the default classloader path.
 					    URL newURL = jarList.get(i).toURI().toURL();
 					    
-					    // original method
-//					    Method method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
-//					    method.setAccessible(true);
-//					    method.invoke(cl, newURL);
-					    
-					    // first fix attempt - create a brand new URLClassLoader. As expected, we get a ClassCastException when trying
-					    // to load the parameters so we can't save params using this method
-//					    URL[] newURLArray = new URL[1];
-//					    newURLArray[0] = newURL;
-//						cl = new URLClassLoader(newURLArray);
 						
 					    // second attempt - custom class loader with the system app loader specified as the parent.  Loads controlled unit, but
 					    // as before it doesn't load the parameters
 					    classLoader.addURL(newURL);
 
-					    // third attempt
-//					    Class<?> genericClass = cl.getClass();
-//					    Method method = genericClass.getSuperclass().getDeclaredMethod("addURL", new Class[] {URL.class});
-//					    method.setAccessible(true);
-//					    method.invoke(cl, new Object[] {newURL});
-
-					    
-					    
-					    
 					    // Save the name of the class to the global pluginBeingLoaded variable, and load the class.
 					    this.setPluginBeingLoaded(className);
 //						Class c = cl.loadClass(className);
