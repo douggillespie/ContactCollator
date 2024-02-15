@@ -239,7 +239,9 @@ public class CollatorStreamProcess extends PamProcess {
 
 			if (decimator != null) {
 				decimatedData = decimator.process(rawUnit);
-				raw = decimatedData.getRawData();
+				if (decimatedData != null) {
+					raw = decimatedData.getRawData();
+				}
 			}
 			else {
 				raw = rawUnit.getRawData();
@@ -247,6 +249,9 @@ public class CollatorStreamProcess extends PamProcess {
 			if (clipStartMillis < 0) {
 				clipStartMillis = rawUnit.getTimeMilliseconds();
 				clipStartSample = rawUnit.getStartSample();
+			}
+			if (raw == null) {
+				continue; // this will look messy, but should stop it crashing. 
 			}
 			int newLength = channelSamples[iChan] + raw.length;
 			if (newLength > wavData[iChan].length) {
@@ -291,7 +296,7 @@ public class CollatorStreamProcess extends PamProcess {
 
 		@Override
 		public long getRequiredDataHistory(PamObservable observable, Object arg) {
-			return 0;
+			return 0;//(long) (parameterSet.outputClipLengthS*1000.) + 3000;
 		}
 
 		@Override
