@@ -7,6 +7,7 @@ import java.awt.event.ActionListener;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -39,6 +40,8 @@ public class CollatorSetPanel implements PamDialogPanel {
 	private PamSettingsIconButton filterButton;
 	
 	private JTextField triggerCount, triggerSeconds;
+	
+	private JCheckBox makeWaveClip;;
 	
 	private JTextField sourceSampleRate, outputSampleRate, outputSeconds;
 	
@@ -128,6 +131,9 @@ public class CollatorSetPanel implements PamDialogPanel {
 		// stuff for the output panel
 		c = new PamGridBagContraints();
 		c.gridwidth = 5;
+		makeWaveClip = new JCheckBox("Create output sound clip");
+		outPanel.add(makeWaveClip, c);
+		c.gridy++;
 		rawDataSourcePanel = new SourcePanel(collatorDialog, RawDataUnit.class, false, true);
 		outPanel.add(rawDataSourcePanel.getPanel(), c);
 		JButton defaultButton = new JButton("Default");
@@ -163,7 +169,12 @@ public class CollatorSetPanel implements PamDialogPanel {
 		outPanel.add(new JLabel(" s", JLabel.LEFT), c);
 		
 		
-		
+		makeWaveClip.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				enableControls();
+			}
+		});
 		rawDataSourcePanel.addSelectionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -183,6 +194,7 @@ public class CollatorSetPanel implements PamDialogPanel {
 		triggerCount.setToolTipText("Number of detections required to trigger output");
 		triggerSeconds.setToolTipText("Trigger count period in seconds");
 		defaultButton.setToolTipText("Use the raw data source feeding the trigger data detector");
+		makeWaveClip.setToolTipText("Create output waveform clips for display / further analysis");
 		sourceSampleRate.setToolTipText("Sample rate of source data");
 		outputSampleRate.setToolTipText("Enter a lower sample rate if you want data decimated prior to output");
 		outputSeconds.setToolTipText("Clip length in seconds (enter 0 for no output clip data)");
@@ -218,6 +230,13 @@ public class CollatorSetPanel implements PamDialogPanel {
 			return;
 		}
 		dataSelector.showSelectDialog(collatorControl.getGuiFrame());
+	}
+	
+	private void enableControls() {
+		boolean opEn = makeWaveClip.isSelected();
+		outputSampleRate.setEnabled(opEn);
+		rawDataSourcePanel.setEnabled(opEn);
+		outputSeconds.setEnabled(opEn);
 	}
 	
 	private void detectionSourceChange() {
@@ -302,9 +321,11 @@ public class CollatorSetPanel implements PamDialogPanel {
 		if (collatorParamSet.outputSampleRate > 0) {
 			outputSampleRate.setText(String.format("%d", collatorParamSet.outputSampleRate));
 		}
+		makeWaveClip.setSelected(collatorParamSet.makeWaveClip);
 		outputSeconds.setText(String.format("%1.1f", collatorParamSet.outputClipLengthS));
 		minupdateInterval.setText(String.format("%1.1f", collatorParamSet.minimumUpdateIntervalS));
 		outputSourceChanged();
+		enableControls();
 	}
 
 	@Override
@@ -334,8 +355,9 @@ public class CollatorSetPanel implements PamDialogPanel {
 		catch (NumberFormatException e) {
 			return collatorDialog.showWarning("Invalid or empty number field for trigger data");
 		}
+		collatorParamSet.makeWaveClip = makeWaveClip.isSelected();
 		collatorParamSet.rawDataSource = rawDataSourcePanel.getSourceName();
-		if (collatorParamSet.rawDataSource == null) {
+		if (collatorParamSet.rawDataSource == null && collatorParamSet.makeWaveClip) {
 			return collatorDialog.showWarning("You must enter a raw data source");
 		}
 		
@@ -347,22 +369,30 @@ public class CollatorSetPanel implements PamDialogPanel {
 			rawFS = Integer.valueOf(sourceSampleRate.getText());
 		}
 		catch (NumberFormatException e) {
-			return collatorDialog.showWarning("Invalid or empty number field for output sample rate");
+			if (collatorParamSet.makeWaveClip) {
+				return collatorDialog.showWarning("Invalid or empty number field for output sample rate");
+			}
 		}
 		if (collatorParamSet.outputSampleRate > rawFS) {
-			return collatorDialog.showWarning("The final output sample rate should not be greater than the raw data sample rate");
+			if (collatorParamSet.makeWaveClip) {
+				return collatorDialog.showWarning("The final output sample rate should not be greater than the raw data sample rate");
+			}
 		}
 		try {
 			collatorParamSet.outputClipLengthS = Float.valueOf(outputSeconds.getText());
 		}
 		catch (NumberFormatException e) {
-			return collatorDialog.showWarning("Invalid or empty clip length");
+			if (collatorParamSet.makeWaveClip) {
+				return collatorDialog.showWarning("Invalid or empty clip length");
+			}
 		}
 		try {
 			collatorParamSet.minimumUpdateIntervalS = Float.valueOf(minupdateInterval.getText());
 		}
 		catch (NumberFormatException e) {
-			return collatorDialog.showWarning("Invalid or empty minimum update interval");
+			if (collatorParamSet.makeWaveClip) {
+				return collatorDialog.showWarning("Invalid or empty minimum update interval");
+			}
 		}
 		
 		return true;

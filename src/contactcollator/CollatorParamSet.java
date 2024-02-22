@@ -26,6 +26,11 @@ public class CollatorParamSet  implements ManagedParameters, Cloneable, Serializ
 	public String detectionSource;
 	
 	/**
+	 * Make an output clip waveform. 
+	 */
+	public boolean makeWaveClip;
+	
+	/**
 	 * Raw data to make clip from
 	 */
 	public String rawDataSource;

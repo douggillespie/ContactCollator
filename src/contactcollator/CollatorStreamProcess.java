@@ -130,7 +130,7 @@ public class CollatorStreamProcess extends PamProcess {
 			 * still block the trigger data thread if the next stage takes more than a second or two, to may need 
 			 * to make an entirely new thread to handle these final bits of the processing?? 
 			 */
-			CollatorDataUnit newDataUnit = createOutputData(trigger, cloneCopy, 0x1);
+			CollatorDataUnit newDataUnit = createOutputData(trigger, 0x1);
 			if (newDataUnit == null) {
 				return;
 			}
@@ -182,10 +182,30 @@ public class CollatorStreamProcess extends PamProcess {
 	 * @param cloneCopy 
 	 * @param channelMap
 	 */
-	private CollatorDataUnit createOutputData(CollatorTriggerData trigger, ArrayList<RawDataUnit> cloneCopy, int channelMap) {
+	private CollatorDataUnit createOutputData(CollatorTriggerData trigger, int channelMap) {
+		int nChan = PamUtils.getNumChannels(channelMap);
+		double[][] wavData = null;
+		int wavLength = 0;
+		CollatorDataUnit newData;
+		if (parameterSet.makeWaveClip) {
+			newData = createWithWave( trigger, channelMap);
+		}
+		else {
+			newData = new CollatorDataUnit(trigger.getStartTime(), channelMap, 0, parameterSet.outputSampleRate, wavLength, trigger, parameterSet.setName, wavData);
+		}
+				
+		return newData;
+	}
+	
+	private CollatorDataUnit createWithWave(CollatorTriggerData trigger, int channelMap) {
 		int nChan = PamUtils.getNumChannels(channelMap);
 		double[][] wavData = new double[nChan][];
 		float fs = parameterSet.outputSampleRate;
+
+		ArrayList<RawDataUnit> cloneCopy = null;
+		synchronized (rawDataCopy.getSynchLock()) {
+			cloneCopy = rawDataCopy.getDataCopy();
+		}
 
 		/**
 		 * Stretch the start and end times slightly if they fit within the max length
@@ -273,8 +293,12 @@ public class CollatorStreamProcess extends PamProcess {
 				wavData[i] = Arrays.copyOf(wavData[i], channelSamples[i]);
 			}
 		}
-		
-		CollatorDataUnit newData = new CollatorDataUnit(clipStartMillis, channelMap, clipStartSample, parameterSet.outputSampleRate, wavData[0].length, trigger, parameterSet.setName, wavData);
+		int wavLength = 0;
+		if (wavData != null) {
+			wavLength = wavData[0].length;
+		}
+
+		CollatorDataUnit newData = new CollatorDataUnit(clipStartMillis, channelMap, clipStartSample, parameterSet.outputSampleRate, wavLength, trigger, parameterSet.setName, wavData);
 				
 		return newData;
 	}
@@ -296,7 +320,7 @@ public class CollatorStreamProcess extends PamProcess {
 
 		@Override
 		public long getRequiredDataHistory(PamObservable observable, Object arg) {
-			return 0;//(long) (parameterSet.outputClipLengthS*1000.) + 3000;
+			return (long) (parameterSet.outputClipLengthS*1000.) + 3000;
 		}
 
 		@Override
@@ -304,6 +328,9 @@ public class CollatorStreamProcess extends PamProcess {
 			/**
 			 * Make a copy of the data (not the raw data) into a local array. won't need much memory, so OK. 
 			 */
+			if (parameterSet.makeWaveClip == false) {
+				return;
+			}
 			RawDataUnit in = (RawDataUnit) pamDataUnit;
 			RawDataUnit copy = new RawDataUnit(in.getTimeMilliseconds(), in.getChannelBitmap(), in.getStartSample(), in.getSampleDuration());
 			copy.setRawData(in.getRawData());
@@ -363,7 +390,9 @@ public class CollatorStreamProcess extends PamProcess {
 		
 		rawDataBlock = PamController.getInstance().getRawDataBlock(parameterSet.rawDataSource);
 		if (rawDataBlock != null) {
-			rawDataBlock.addObserver(rawDataObserver, false);
+			if (parameterSet.makeWaveClip) {
+				rawDataBlock.addObserver(rawDataObserver, false);
+			}
 			rawDataCopy.setChannelMap(rawDataBlock.getChannelMap());
 			rawDataCopy.setSampleRate(rawDataBlock.getSampleRate(), false);
 			rawDataCopy.setNaturalLifetimeMillis((int) ((parameterSet.outputClipLengthS*1.1) * 1000)+20000);
