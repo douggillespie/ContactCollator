@@ -50,6 +50,7 @@ import meygenturbine.MeygenTurbine;
 import networkTransfer.receive.BuoyStatusDataUnit;
 import networkTransfer.receive.NetworkReceiver;
 import printscreen.PrintScreenControl;
+import processoverloader.OverloadPlugin;
 import rockBlock.RockBlockControl;
 import turbineops.TurbineOperationControl;
 import GPS.GpsDataUnit;
@@ -1077,6 +1078,7 @@ final public class PamModel implements PamModelInterface, PamSettings {
 		daqList.clear();
 		
 		pluginList.add(new CollatorPlugin());
+		pluginList.add(new OverloadPlugin());
 
 		// Load up whatever default classloader was used to create this class.  Must use the same classloader
 		// for all plugins, or else we will not be able to create proper dependencies between them or be able
