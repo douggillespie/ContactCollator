@@ -27,6 +27,8 @@ import clickDetector.ClickDetection;
 import clipgenerator.ClipOverlayGraphics;
 import clipgenerator.clipDisplay.ClipSymbolManager;
 import contactcollator.io.CollatorBinaryStorage;
+import contactcollator.io.CollatorJsonDataSource;
+import contactcollator.swing.CollatorDisplayProvider;
 import contactcollator.swing.CollatorOverlayGraphics;
 import contactcollator.trigger.CollatorTriggerData;
 import detectiongrouplocaliser.DetectionGroupControl;
@@ -67,6 +69,7 @@ public class CollatorProcess extends PamProcess {
 		annotatedDataBlock = new AnnotatedCollationDataBlock("Annotated_Detections",this,0);
 		annotatedDataBlock.setOverlayDraw(new CollatorOverlayGraphics(annotatedDataBlock));
 		annotatedDataBlock.SetLogging(new CollatorExtendedLogging(collatorControl, annotatedDataBlock));
+		annotatedDataBlock.setJSONDataSource(new CollatorJsonDataSource());
 		addOutputDataBlock(annotatedDataBlock);
 		
 	}
@@ -80,6 +83,8 @@ public class CollatorProcess extends PamProcess {
 	}
 	
 	public void addAnnotation(PamDataUnit newUnit,DataAnnotation ann) {
+		
+		System.out.println("Add annotation called");
 		
 		CollatorDataUnit annotatedCollatorUnit;
  		if(!(newUnit instanceof CollatorDataUnit)) {
@@ -132,6 +137,10 @@ public class CollatorProcess extends PamProcess {
 		}
 		collatorUnit.setLocalization3D(superDu);
 		collatorDataBlock.updatePamData(collatorUnit, System.currentTimeMillis());
+		CollatorDisplayProvider displayProvider = this.collatorControl.getStreamDisplayProvider(collatorUnit.getStreamName());
+		if(displayProvider!=null) {
+			displayProvider.displayPanel.paintEdge(collatorUnit);
+		}
 		
 	}
 	

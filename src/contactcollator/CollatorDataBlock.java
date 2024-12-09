@@ -39,10 +39,10 @@ public class CollatorDataBlock extends ClipDisplayDataBlock<CollatorDataUnit> {
 				ListIterator<CollatorDataUnit> iter = this.getListIterator(ITERATOR_END);
 				while (iter.hasPrevious()) {
 					collatorDataUnit = iter.previous();
-					if(collatorDataUnit.triggerName.equals(crdu.getParentDataBlock().getLongDataName())
-						&& collatorDataUnit.getTriggerUID()==crdu.getUID()) {
+					if(collatorDataUnit.triggerName.equals(crdu.getParentDataBlock().getLongDataName()) && collatorDataUnit.getTriggerUID()==crdu.getUID()) {
 						return collatorDataUnit;
 					}
+					
 				}
 			}
 		

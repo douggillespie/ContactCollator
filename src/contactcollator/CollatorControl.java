@@ -64,6 +64,18 @@ public class CollatorControl extends PamControlledUnit implements PamSettings, C
 		}
 		firstCallToAddStreamProviders=false;
 	}
+	
+	public CollatorDisplayProvider getStreamDisplayProvider(String streamName) {
+		if(streamDisplayProviders==null) {
+			return null;
+		}
+		for(CollatorDisplayProvider displayProvider:streamDisplayProviders) {
+			if(displayProvider.collatorStreamProcess.getProcessName().equals(streamName)) {
+				return displayProvider;
+			}
+		}
+		return null;
+	}
 
 	@Override
 	public JMenuItem createDetectionMenu(Frame parentFrame) {

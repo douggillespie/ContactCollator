@@ -10,7 +10,8 @@ import userDisplay.UserDisplayProvider;
 public class CollatorDisplayProvider  implements UserDisplayProvider {
 	
 	private CollatorControl collatorControl;
-	CollatorStreamProcess collatorStreamProcess;
+	public CollatorStreamProcess collatorStreamProcess;
+	public CollatorClipDisplayPanel displayPanel;
 
 
 	public CollatorDisplayProvider(CollatorControl collatorControl,	CollatorStreamProcess collatorStreamProcess) {
@@ -26,9 +27,10 @@ public class CollatorDisplayProvider  implements UserDisplayProvider {
 
 	@Override
 	public UserDisplayComponent getComponent(UserDisplayControl userDisplayControl, String uniqueDisplayName) {
-		return new CollatorClipDisplayPanel(collatorStreamProcess);
+		displayPanel = new CollatorClipDisplayPanel(collatorStreamProcess);
+		return displayPanel;
 	}
-
+	
 	@Override
 	public Class getComponentClass() {
 		return ClipDisplayPanel.class;

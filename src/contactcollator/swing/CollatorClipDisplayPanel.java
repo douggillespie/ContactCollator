@@ -1,8 +1,14 @@
 package contactcollator.swing;
 
+import java.awt.Color;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
 
+import javax.swing.BorderFactory;
+import javax.swing.border.Border;
+import javax.swing.border.LineBorder;
+
+import PamUtils.PamCalendar;
 import PamguardMVC.PamDataBlock;
 import PamguardMVC.PamDataUnit;
 import PamguardMVC.PamProcess;
@@ -24,6 +30,21 @@ public class CollatorClipDisplayPanel extends ClipDisplayPanel{
 		this.collatorStreamProcess = (CollatorStreamProcess) clipDisplayParent;
 		this.setSampleRate(collatorStreamProcess.getParameterSet().outputSampleRate);
 		
+	}
+	
+	public void paintEdge(CollatorDataUnit collatorDu) {
+		//super.u
+		synchronized (unitsPanel.getTreeLock()) {
+			int compCount = unitsPanel.getComponentCount();
+			ClipDisplayUnit clipDisplayUnit;
+			for (int i = compCount-1; i >= 0; i--) {
+				clipDisplayUnit = (ClipDisplayUnit) unitsPanel.getComponent(i);
+				if(clipDisplayUnit.getClipDataUnit().getUID()==collatorDu.getUID()) {
+					clipDisplayUnit.setBorder(new LineBorder(Color.green));
+					clipDisplayUnit.repaint();
+				}
+			}
+		}
 	}
 	
 	@Override
