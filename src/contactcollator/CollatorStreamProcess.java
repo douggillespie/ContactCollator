@@ -14,6 +14,13 @@ import PamguardMVC.PamObserver;
 import PamguardMVC.PamProcess;
 import PamguardMVC.PamRawDataBlock;
 import PamguardMVC.dataSelector.DataSelector;
+import clickDetector.ClickDetection;
+import clipgenerator.ClipDataUnit;
+import clipgenerator.ClipDisplayDataBlock;
+import clipgenerator.ClipProcess.ClipRequest;
+import clipgenerator.clipDisplay.ClipDisplayDecorations;
+import clipgenerator.clipDisplay.ClipDisplayParent;
+import clipgenerator.clipDisplay.ClipDisplayUnit;
 import contactcollator.bearings.BearingSummariser;
 import contactcollator.bearings.BearingSummary;
 import contactcollator.bearings.BearingSummaryLocalisation;
@@ -26,7 +33,7 @@ import decimator.DecimatorParams;
 import decimator.DecimatorProcessW;
 import decimator.DecimatorWorker;
 
-public class CollatorStreamProcess extends PamProcess {
+public class CollatorStreamProcess extends PamProcess implements ClipDisplayParent{
 
 	private CollatorControl collatorControl;
 	private CollatorDataBlock collatorBlock;
@@ -40,6 +47,9 @@ public class CollatorStreamProcess extends PamProcess {
 	private CollatorRateFilter collatorRateFilter;
 	private DecimatorWorker decimator;
 	private BearingSummariser bearingSummariser;
+	private List<ClipRequest> clipRequestQueue;
+	private Object clipRequestSynch = new Object();
+
 	
 	private HeadingHistogram headingHistogram;
 
@@ -58,28 +68,36 @@ public class CollatorStreamProcess extends PamProcess {
 		collatorRateFilter = new CollatorRateFilter();
 		
 		headingHistogram = new HeadingHistogram(24, true);
+		
+		clipRequestQueue = new LinkedList<ClipRequest>();
+		
 	}
 
 	@Override
 	public void pamStart() {
-		// TODO Auto-generated method stub
+		rawDataObserver.pause=false;
 
 	}
 
 	@Override
 	public void pamStop() {
-		// TODO Auto-generated method stub
+		rawDataObserver.pause=true;
 
 	}
 	
 	@Override
 	public void newData(PamObservable o, PamDataUnit dataUnit) {
 		// see if we actually want it using the data selector
+		if(PamController.getInstance().getRunMode()==PamController.RUN_NETWORKRECEIVER) {
+			return;
+		}
 		if (wantDetectionData(dataUnit)) {
 			useDetectionData(dataUnit);
 		}
 	}
 	
+	
+
 	/**
 	 * Use the data selector built into the detection datablock to see if we want the incoming data. 
 	 * @param dataUnit
@@ -130,7 +148,10 @@ public class CollatorStreamProcess extends PamProcess {
 			 * still block the trigger data thread if the next stage takes more than a second or two, to may need 
 			 * to make an entirely new thread to handle these final bits of the processing?? 
 			 */
-			CollatorDataUnit newDataUnit = createOutputData(trigger, 0x1);
+			int firstChannel = PamUtils.getLowestChannel(trigger.getDataList().get(0).getChannelBitmap());
+			int[] channelList = new int[] {firstChannel};
+			int bitmap = PamUtils.makeChannelMap(channelList);
+			CollatorDataUnit newDataUnit = createOutputData(trigger, bitmap);
 			if (newDataUnit == null) {
 				return;
 			}
@@ -449,6 +470,30 @@ public class CollatorStreamProcess extends PamProcess {
 	 */
 	public CollatorParamSet getParameterSet() {
 		return parameterSet;
+	}
+
+	@Override
+	public ClipDisplayDataBlock getClipDataBlock() {
+		// TODO Auto-generated method stub
+		return collatorBlock;
+	}
+
+	@Override
+	public String getDisplayName() {
+		// TODO Auto-generated method stub
+		return this.getSetName()+" Clips";
+	}
+
+	@Override
+	public ClipDisplayDecorations getClipDecorations(ClipDisplayUnit clipDisplayUnit) {
+		// TODO Auto-generated method stub
+		return new ClipDisplayDecorations(clipDisplayUnit);
+	}
+
+	@Override
+	public void displaySettingChange() {
+		// TODO Auto-generated method stub
+		
 	}
 
 }
