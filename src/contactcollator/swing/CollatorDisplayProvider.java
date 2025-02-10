@@ -11,7 +11,7 @@ public class CollatorDisplayProvider  implements UserDisplayProvider {
 	
 	private CollatorControl collatorControl;
 	public CollatorStreamProcess collatorStreamProcess;
-	public CollatorClipDisplayPanel displayPanel;
+	public ClipDisplayPanel displayPanel;
 
 
 	public CollatorDisplayProvider(CollatorControl collatorControl,	CollatorStreamProcess collatorStreamProcess) {
@@ -19,15 +19,28 @@ public class CollatorDisplayProvider  implements UserDisplayProvider {
 		this.collatorControl = collatorControl;
 		this.collatorStreamProcess = collatorStreamProcess;
 	}
+	
+	public CollatorDisplayProvider(CollatorControl collatorControl) {
+		super();
+		this.collatorControl = collatorControl;
+	}
 
 	@Override
 	public String getName() {
-		return collatorStreamProcess.getSetName() + " clips";
+		if(this.collatorStreamProcess!=null) {
+			return collatorStreamProcess.getSetName() + " clips";
+		}else {
+			return this.collatorControl.getDisplayName()+" clips";
+		}
 	}
 
 	@Override
 	public UserDisplayComponent getComponent(UserDisplayControl userDisplayControl, String uniqueDisplayName) {
-		displayPanel = new CollatorClipDisplayPanel(collatorStreamProcess);
+		if(this.collatorStreamProcess!=null) {
+			displayPanel = new CollatorClipDisplayPanel(collatorStreamProcess);
+		}else {
+			displayPanel = new ClipDisplayPanel(this.collatorControl);
+		}
 		return displayPanel;
 	}
 	

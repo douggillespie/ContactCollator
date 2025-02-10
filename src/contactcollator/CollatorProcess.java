@@ -2,16 +2,34 @@ package contactcollator;
 
 import java.util.ArrayList;
 
+import javax.sound.sampled.AudioFormat;
+
 import Acquisition.AcquisitionControl;
 import Array.ArrayManager;
 import PamController.PamControlledUnit;
 import PamController.PamController;
 import PamUtils.PamUtils;
+import PamView.symbol.StandardSymbolManager;
 import PamguardMVC.PamDataBlock;
+import PamguardMVC.PamDataUnit;
+import PamguardMVC.PamObservable;
 import PamguardMVC.PamProcess;
+import PamguardMVC.superdet.SubdetectionInfo;
+import PamguardMVC.superdet.SuperDetDataBlock;
+import PamguardMVC.superdet.SuperDetection;
+import annotation.DataAnnotation;
+import contactcollator.io.CollatorBinaryStorage;
 import contactcollator.io.CollatorExtendedLogging;
+import contactcollator.io.CollatorJsonDataSource;
 import contactcollator.io.CollatorLogging;
+import contactcollator.swing.CollatorDisplayProvider;
 import contactcollator.swing.CollatorOverlayGraphics;
+import detectiongrouplocaliser.DetectionGroupDataUnit;
+import group3dlocaliser.Group3DDataUnit;
+import wavFiles.Wav16AudioFormat;
+import whistlesAndMoans.ConnectedRegionDataUnit;
+import clipgenerator.ClipOverlayGraphics;
+import clipgenerator.clipDisplay.ClipSymbolManager;
 
 
 public class CollatorProcess extends PamProcess {
@@ -109,10 +127,10 @@ public class CollatorProcess extends PamProcess {
 		}
 		collatorUnit.setLocalization3D(superDu);
 		collatorDataBlock.updatePamData(collatorUnit, System.currentTimeMillis());
-		CollatorDisplayProvider displayProvider = this.collatorControl.getStreamDisplayProvider(collatorUnit.getStreamName());
+		/*CollatorDisplayProvider displayProvider = this.collatorControl.getStreamDisplayProvider(collatorUnit.getStreamName());
 		if(displayProvider!=null) {
 			displayProvider.displayPanel.paintEdge(collatorUnit);
-		}
+		}*/
 		
 	}
 
@@ -125,11 +143,11 @@ public class CollatorProcess extends PamProcess {
 		SuperDetection du = (SuperDetection) pamDataUnit;
 		PamDataUnit u;
 		ArrayList<SubdetectionInfo<PamDataUnit>> lastAddedSubDetections = du.getAndResetLastAddedSubDetections();
-		if(lastAddedSubDetections!=null && 
+		/*if(lastAddedSubDetections!=null && 
 			lastAddedSubDetections.size()>0 && 
 			(lastAddedSubDetections.get(0).getSubDetection() instanceof ClickDetection)) {
 			addClickDetectionEvent(lastAddedSubDetections,du);
-		}
+		}*/
 		for(SubdetectionInfo<PamDataUnit> nextInfo : lastAddedSubDetections) {
 			if(annotatedDataBlock.findUnitByUIDandUTC(nextInfo.getSubDetection().getUID(), nextInfo.getSubDetection().getTimeMilliseconds())!=null) {
 				continue;

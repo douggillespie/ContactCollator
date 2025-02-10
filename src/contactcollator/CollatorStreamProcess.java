@@ -2,6 +2,7 @@ package contactcollator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import PamController.PamController;
@@ -75,13 +76,13 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 
 	@Override
 	public void pamStart() {
-		rawDataObserver.pause=false;
+		//rawDataObserver.pause=false;
 
 	}
 
 	@Override
 	public void pamStop() {
-		rawDataObserver.pause=true;
+		//rawDataObserver.pause=true;
 
 	}
 	
