@@ -76,13 +76,13 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 
 	@Override
 	public void pamStart() {
-		//rawDataObserver.pause=false;
+		rawDataObserver.pause=false;
 
 	}
 
 	@Override
 	public void pamStop() {
-		//rawDataObserver.pause=true;
+		rawDataObserver.pause=true;
 
 	}
 	
@@ -339,6 +339,8 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 	}
 	
 	private class RawDataObserver implements PamObserver {
+
+		public boolean pause;
 
 		@Override
 		public long getRequiredDataHistory(PamObservable observable, Object arg) {

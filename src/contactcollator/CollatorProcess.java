@@ -73,9 +73,7 @@ public class CollatorProcess extends PamProcess {
 	}
 	
 	public void addAnnotation(PamDataUnit newUnit,DataAnnotation ann) {
-		
-		System.out.println("Add annotation called");
-		
+				
 		CollatorDataUnit annotatedCollatorUnit;
  		if(!(newUnit instanceof CollatorDataUnit)) {
  			return;
