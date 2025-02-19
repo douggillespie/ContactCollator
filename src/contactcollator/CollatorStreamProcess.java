@@ -247,6 +247,14 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 			selectStart = selectStart - (long) (selectEnd-selectStart)/5;
 		}
 		selectStart = Math.max(selectStart, selectEnd-(long)(parameterSet.outputClipLengthS*1000));
+		
+		long clipLengthMillis = selectEnd-selectStart;
+		if(clipLengthMillis<parameterSet.minClipLengthS*1000) {
+			long addMillis = (long) (parameterSet.minClipLengthS*1000-clipLengthMillis);
+			long addMillisSingleEnd = addMillis/2;
+			selectEnd = selectEnd+addMillisSingleEnd;
+			selectStart = selectStart-addMillisSingleEnd;
+		}
 //		selectStart = wavStart;
 //		selectEnd = wavEnd;
 		// allocate more data than we need, then trim it down later. 
@@ -266,6 +274,7 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 //		if (decimator != null) {
 //			decimator.
 //		}
+		
 		for (RawDataUnit rawUnit : cloneCopy) {
 			if (rawUnit.getEndTimeInMilliseconds() < selectStart) {
 				continue;

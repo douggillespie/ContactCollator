@@ -17,6 +17,7 @@ import clipgenerator.ClipProcess;
 import clipgenerator.clipDisplay.ClipDisplayPanel;
 import clipgenerator.clipDisplay.ClipDisplayParent;
 import clipgenerator.clipDisplay.ClipDisplayUnit;
+import contactcollator.CollatorControl;
 import contactcollator.CollatorDataUnit;
 import contactcollator.CollatorStreamProcess;
 import soundPlayback.ClipPlayback;
@@ -24,12 +25,16 @@ import soundPlayback.ClipPlayback;
 public class CollatorClipDisplayPanel extends ClipDisplayPanel{
 	
 	CollatorStreamProcess collatorStreamProcess;
+	CollatorControl collatorControl;
 
 	public CollatorClipDisplayPanel(ClipDisplayParent clipDisplayParent) {
 		super(clipDisplayParent);
-		this.collatorStreamProcess = (CollatorStreamProcess) clipDisplayParent;
-		this.setSampleRate(collatorStreamProcess.getParameterSet().outputSampleRate);
-		
+		if(clipDisplayParent instanceof CollatorStreamProcess) {
+			this.collatorStreamProcess = (CollatorStreamProcess) clipDisplayParent;
+			this.setSampleRate(collatorStreamProcess.getParameterSet().outputSampleRate);
+		}else {
+			this.collatorControl = (CollatorControl) clipDisplayParent;
+		}
 	}
 	
 	public void paintEdge(CollatorDataUnit collatorDu) {
@@ -49,7 +54,9 @@ public class CollatorClipDisplayPanel extends ClipDisplayPanel{
 	
 	@Override
 	protected boolean shouldShowClip(ClipDisplayUnit dataUnit) {
-				
+		if(this.collatorStreamProcess==null) {
+			return true;
+		}
 		if(dataUnit.getClipDataUnit() instanceof CollatorDataUnit) {
 			CollatorDataUnit du = (CollatorDataUnit) dataUnit.getClipDataUnit();
 			if(du.getStreamName().equals(collatorStreamProcess.getSetName())) {
