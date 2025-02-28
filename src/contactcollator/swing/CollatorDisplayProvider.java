@@ -37,9 +37,9 @@ public class CollatorDisplayProvider  implements UserDisplayProvider {
 	@Override
 	public UserDisplayComponent getComponent(UserDisplayControl userDisplayControl, String uniqueDisplayName) {
 		if(this.collatorStreamProcess!=null) {
-			displayPanel = new CollatorClipDisplayPanel(collatorStreamProcess);
+			displayPanel = new CollatorStreamDisplayPanel(collatorStreamProcess);
 		}else {
-			displayPanel = new ClipDisplayPanel(this.collatorControl);
+			displayPanel = new CollatorCombinedDisplayPanel(this.collatorControl);
 		}
 		return displayPanel;
 	}

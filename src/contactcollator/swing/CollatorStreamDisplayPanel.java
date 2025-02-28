@@ -21,11 +21,11 @@ import contactcollator.CollatorDataUnit;
 import contactcollator.CollatorStreamProcess;
 import soundPlayback.ClipPlayback;
 
-public class CollatorClipDisplayPanel extends ClipDisplayPanel{
+public class CollatorStreamDisplayPanel extends ClipDisplayPanel{
 	
 	CollatorStreamProcess collatorStreamProcess;
 
-	public CollatorClipDisplayPanel(ClipDisplayParent clipDisplayParent) {
+	public CollatorStreamDisplayPanel(ClipDisplayParent clipDisplayParent) {
 		super(clipDisplayParent);
 		this.collatorStreamProcess = (CollatorStreamProcess) clipDisplayParent;
 		this.setSampleRate(collatorStreamProcess.getParameterSet().outputSampleRate);
