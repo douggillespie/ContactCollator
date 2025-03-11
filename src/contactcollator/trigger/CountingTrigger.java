@@ -14,22 +14,31 @@ public class CountingTrigger implements CollatorTrigger {
 	
 	private List<PamDataUnit> history;
 
+	private boolean inActiveTriggerState;
+	
 	public CountingTrigger(CollatorParamSet parameterSet) {
 		super();
 		this.parameterSet = parameterSet;
 		history = new LinkedList<>();
+		inActiveTriggerState = false;
 	}
 
 	@Override
 	public CollatorTriggerData newData(PamDataUnit dataUnit) {
-		int n1 = history.size();
-		clearListTo(dataUnit.getTimeMilliseconds() - (long) (parameterSet.triggerIntervalS*1000.));
-		int n2 = history.size();
+		if(this.inActiveTriggerState) {
+			if(!shouldStayInTriggerState(dataUnit)) {
+				clearListTo(dataUnit.getTimeMilliseconds());
+				this.inActiveTriggerState = false;
+			}
+		}else {
+			clearListTo(dataUnit.getTimeMilliseconds() - (long) (parameterSet.triggerIntervalS*1000.));
+		}
 		synchronized (history) {
 			history.add(dataUnit);
 //			System.out.printf("Have %d in history, started with %d and removed %d (history length %3.1fs)\n", history.size(), n1, n1-n2, parameterSet.triggerIntervalS);
 		}
 		if (history.size() < parameterSet.triggerCount) {
+			this.inActiveTriggerState = false;
 			return null;
 		}
 		else {
@@ -37,12 +46,22 @@ public class CountingTrigger implements CollatorTrigger {
 			 *  return trigger data, noting that another class is going to be responsible for deciding 
 			 *  if it's too soon to save another new data unit (or update?) 
 			 */
+			this.inActiveTriggerState = true;
 			long start = history.get(0).getTimeMilliseconds();
 			long end = dataUnit.getEndTimeInMilliseconds();
+			long lastPossibleEndTime = start + (long) (parameterSet.triggerIntervalS*1000.);
 			List<PamDataUnit> histClone = new ArrayList<>(history);
-			CollatorTriggerData trigData = new CollatorTriggerData(start, end, parameterSet.detectionSource, histClone);
+			CollatorTriggerData trigData = new CollatorTriggerData(start, end, lastPossibleEndTime, parameterSet.detectionSource, histClone);
 			return trigData;
 		}
+	}
+	
+	private boolean shouldStayInTriggerState(PamDataUnit dataUnit) {
+		long timeFromFirstInTrigger = dataUnit.getEndTimeInMilliseconds()-history.get(0).getTimeMilliseconds();
+		if(timeFromFirstInTrigger>(long) (parameterSet.triggerIntervalS*1000.)){
+			return true;
+		}
+		return false;
 	}
 
 	/**
