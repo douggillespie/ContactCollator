@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import PamController.PamController;
 import PamDetection.RawDataUnit;
@@ -94,7 +96,10 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		}
 		if (wantDetectionData(dataUnit)) {
 			useDetectionData(dataUnit);
+		}else {
+			System.out.println("Decided to not use the new detection data.");
 		}
+		
 	}
 	
 	
@@ -128,7 +133,99 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 			newDetectionTrigger(trigger, dataUnit);
 		}
 	}
+	
+	private CollatorDataUnit createNewDataUnit(CollatorTriggerData trigger, PamDataUnit dataUnit) {
+		// sort out all the data we'll be wanting and send or update output. Probably need to decimate it, etc. 
+		// can we block the datablock here ? Or do I need to clone the clone ? 
+		ArrayList<RawDataUnit> cloneCopy = null;
+		synchronized (rawDataCopy.getSynchLock()) {
+			cloneCopy = rawDataCopy.getDataCopy();
+		}
+		/* 
+		 * that's safe ! Freed copy, can now take time decimating those data, etc. though note that this may 
+		 * still block the trigger data thread if the next stage takes more than a second or two, to may need 
+		 * to make an entirely new thread to handle these final bits of the processing?? 
+		 */
+		int firstChannel = PamUtils.getLowestChannel(trigger.getDataList().get(0).getChannelBitmap());
+		int[] channelList = new int[] {firstChannel};
+		int bitmap = PamUtils.makeChannelMap(channelList);
+		CollatorDataUnit newDataUnit = createOutputData(trigger, bitmap);
+		if (newDataUnit == null) {
+			return null;
+		}
+		BearingSummary bearingSummary = getBearingSummary(trigger);
+		if (bearingSummary != null) {
+			newDataUnit.setBearingSummary(new BearingSummaryLocalisation(newDataUnit, bearingSummary));
+		}
+		if (headingHistogram != null) {
+			newDataUnit.setHeadingHistogram(headingHistogram.clone());
+		}
+		
+		/**
+		 * Synch adding data with collatorControl, but NOT the datablock since that will really 
+		 * mess up some other threading stuff by blocking the datablock users for too long
+		 * leading to a lock. 
+		 */
+		
+		return newDataUnit;
+	}
+	
+	private void sendData(CollatorDataUnit newDataUnit) {
+		synchronized (collatorControl) {
+			collatorBlock.addPamData(newDataUnit);
+		}
+		headingHistogram.reset();
+	}
 
+	private Timer stagedDataUnitTimer;
+	
+	private StagedDataUnitTimerTask stagedDataUnitTimerTask;
+	
+	class StagedDataUnitTimerTask extends TimerTask{
+		
+		CollatorDataUnit dataUnit;
+		
+		boolean complete;
+		
+		public StagedDataUnitTimerTask(CollatorDataUnit newDataUnit) {
+			this.dataUnit = newDataUnit;
+			complete = false;
+		}
+		
+		public void updateDataUnit(CollatorDataUnit newDataUnit) {
+			this.dataUnit = newDataUnit;
+		}
+
+		@Override
+		public void run() {
+			sendData(this.dataUnit);
+			complete=true;
+		}
+		
+	}
+	
+	private synchronized void scheduleSendData(CollatorDataUnit newDataUnit,long millisToWait) {
+		if(millisToWait<=0) {
+			sendData(newDataUnit);
+		}
+		if(this.stagedDataUnitTimer!=null && this.stagedDataUnitTimerTask!=null) {
+			if(!this.stagedDataUnitTimerTask.complete) {
+				try {
+					this.stagedDataUnitTimerTask.wait(500);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			if(!this.stagedDataUnitTimerTask.complete) {
+				this.stagedDataUnitTimerTask.cancel();
+				this.stagedDataUnitTimer.cancel();
+			}
+		}
+		this.stagedDataUnitTimerTask = new StagedDataUnitTimerTask(newDataUnit);
+		this.stagedDataUnitTimer = new Timer();
+		this.stagedDataUnitTimer.schedule(stagedDataUnitTimerTask, millisToWait+200);
+	}
+	
 	/**
 	 * the system has triggered and decided it want's to make an output data unit
 	 * @param trigger trigger information
@@ -137,44 +234,24 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 	private void newDetectionTrigger(CollatorTriggerData trigger, PamDataUnit dataUnit) {
 		// TODO Auto-generated method stub
 		int option = collatorRateFilter.judgeTriggerData(parameterSet, trigger);
-		if (option == CollatorRateFilter.TRIGGER_SENDDATA) {
-			// sort out all the data we'll be wanting and send or update output. Probably need to decimate it, etc. 
-			// can we block the datablock here ? Or do I need to clone the clone ? 
-			ArrayList<RawDataUnit> cloneCopy = null;
-			synchronized (rawDataCopy.getSynchLock()) {
-				cloneCopy = rawDataCopy.getDataCopy();
+		CollatorDataUnit newDataUnit = createNewDataUnit(trigger,dataUnit);
+		if(newDataUnit==null) {
+			return;
+		}
+		if (option == CollatorRateFilter.TRIGGER_SENDATA_NOW) {
+			sendData(newDataUnit);
+		}
+		if(option == CollatorRateFilter.TRIGGER_SENDDATA_LATER) {
+			long sendDelayMillis = trigger.getLastPossibleEndTime()-System.currentTimeMillis();
+			scheduleSendData(newDataUnit,sendDelayMillis);
+		}
+		if(option == CollatorRateFilter.TRIGGER_SENDUPDATE) {
+			if(this.stagedDataUnitTimerTask==null || this.stagedDataUnitTimerTask.complete) {
+				long sendDelayMillis = trigger.getLastPossibleEndTime()-System.currentTimeMillis();
+				scheduleSendData(newDataUnit,sendDelayMillis);
+			}else {
+				this.stagedDataUnitTimerTask.updateDataUnit(newDataUnit);
 			}
-			/* 
-			 * that's safe ! Freed copy, can now take time decimating those data, etc. though note that this may 
-			 * still block the trigger data thread if the next stage takes more than a second or two, to may need 
-			 * to make an entirely new thread to handle these final bits of the processing?? 
-			 */
-			int firstChannel = PamUtils.getLowestChannel(trigger.getDataList().get(0).getChannelBitmap());
-			int[] channelList = new int[] {firstChannel};
-			int bitmap = PamUtils.makeChannelMap(channelList);
-			CollatorDataUnit newDataUnit = createOutputData(trigger, bitmap);
-			if (newDataUnit == null) {
-				return;
-			}
-			BearingSummary bearingSummary = getBearingSummary(trigger);
-			if (bearingSummary != null) {
-				newDataUnit.setBearingSummary(new BearingSummaryLocalisation(newDataUnit, bearingSummary));
-			}
-			if (headingHistogram != null) {
-				newDataUnit.setHeadingHistogram(headingHistogram.clone());
-				headingHistogram.reset();
-			}
-			
-			/**
-			 * Synch adding data with collatorControl, but NOT the datablock since that will really 
-			 * mess up some other threading stuff by blocking the datablock users for too long
-			 * leading to a lock. 
-			 */
-			synchronized (collatorControl) {
-				collatorBlock.addPamData(newDataUnit);
-			}
-			collatorTrigger.reset();
-//			wav = rawDataCopy.
 		}
 		
 	}
@@ -251,7 +328,7 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		long clipLengthMillis = selectEnd-selectStart;
 		if(clipLengthMillis<parameterSet.minClipLengthS*1000) {
 			long addMillis = (long) (parameterSet.minClipLengthS*1000-clipLengthMillis);
-			long addMillisSingleEnd = addMillis/2;
+			long addMillisSingleEnd = (long) (addMillis/2.0);
 			selectEnd = selectEnd+addMillisSingleEnd;
 			selectStart = selectStart-addMillisSingleEnd;
 		}
@@ -316,7 +393,7 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 			if (channelSamples[i] > allocatedSamples) {
 				// keep the end, skip the start
 				int skipSamples = channelSamples[i]-allocatedSamples;
-				clipStartMillis += skipSamples * 1000 / fs;
+				clipStartMillis += skipSamples * 1000.0 / fs;
 				wavData[i] = Arrays.copyOfRange(wavData[i], channelSamples[i]-allocatedSamples, channelSamples[i]);
 			}
 			else if (channelSamples[i] < allocatedSamples) {

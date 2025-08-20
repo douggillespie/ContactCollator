@@ -58,6 +58,11 @@ public class CollatorClipDisplayPanel extends ClipDisplayPanel{
 		if(this.collatorStreamProcess==null) {
 			return true;
 		}
+		int dataChMap = dataUnit.channelBitmap;
+		int displayChMap = collatorControl.getCollatorParams().displayChannelMap;
+		if(!(dataChMap & displayChMap)) {
+			
+		}
 		if(dataUnit.getClipDataUnit() instanceof CollatorDataUnit) {
 			CollatorDataUnit du = (CollatorDataUnit) dataUnit.getClipDataUnit();
 			if(du.getStreamName().equals(collatorStreamProcess.getSetName())) {

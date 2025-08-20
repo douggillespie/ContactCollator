@@ -12,6 +12,11 @@ public class CollatorJsonData extends JSONObjectData{
 	String buoyId;
 	double lowFrequency;
 	double highFrequency;
+	public String triggerSource;
+	public long startTime;
+	public long endTime;
+	public int detectionCount;
+	public double stdRadians;
 	
 
 }

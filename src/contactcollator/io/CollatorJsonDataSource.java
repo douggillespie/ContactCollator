@@ -4,6 +4,7 @@ import Array.ArrayManager;
 import Array.Streamer;
 import PamguardMVC.PamDataUnit;
 import contactcollator.CollatorDataUnit;
+import contactcollator.trigger.CollatorTriggerData;
 import jsonStorage.JSONObjectDataSource;
 
 public class CollatorJsonDataSource extends JSONObjectDataSource<CollatorJsonData>{
@@ -19,9 +20,23 @@ public class CollatorJsonDataSource extends JSONObjectDataSource<CollatorJsonDat
 		objectData.buoyId = getpbId(newUnit.getChannelBitmap());
 		objectData.wavData = newUnit.getWaveData()[0];
 		objectData.wavFs = newUnit.getSourceSampleRate();
-		objectData.centerBearingDegrees = newUnit.getBearingSummaryLocalisation().getRealWorldVectors()[0].getHeading();
+		if(newUnit.getBearingSummaryLocalisation()!=null) {
+			objectData.centerBearingDegrees = newUnit.getBearingSummaryLocalisation().getRealWorldVectors()[0].getHeading();
+			if(newUnit.getBearingSummaryLocalisation().getBearingSummary()!=null) {
+				objectData.stdRadians = newUnit.getBearingSummaryLocalisation().getBearingSummary().getStdHeading();
+			}
+		}
 		objectData.lowFrequency = newUnit.getFrequency()[0];
 		objectData.highFrequency = newUnit.getFrequency()[1];
+		objectData.triggerSource = newUnit.triggerName;
+		CollatorTriggerData triggerData = newUnit.findTriggerData();
+		if(triggerData!=null && triggerData.getDataList().size()>0) {
+			objectData.startTime = triggerData.getStartTime();
+			objectData.endTime = triggerData.getEndTime();
+			objectData.detectionCount = triggerData.getDataList().size();
+			//newUnit.getHeadingHistogram().getData();
+		}
+		//newUnit.
 		
 	}
 	
