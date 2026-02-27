@@ -61,6 +61,8 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder,Clon
 	
 	private Group3DDataUnit group3DDataUnit;
 	
+	private float rawDataSampleRate;
+	
 	//Adding final strings for group3d loc name, because the dataunits are returning null for parentdatablock
 	private final String group3dLF = "Group 3D Localiser LF, Group";
 	private final String group3dMF = "Group 3D Localiser MF, Group";
@@ -368,7 +370,7 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder,Clon
 		CollatorDataUnit newUnit = new CollatorDataUnit(this.getTimeMilliseconds(),
 				this.getChannelBitmap(),
 				this.getStartSample(),
-				this.getSampleRate(),
+				this.getDisplaySampleRate(),
 				this.getSampleDuration().intValue(),
 				this.getTriggerData(),
 				this.getStreamName(),
@@ -415,6 +417,14 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder,Clon
 			cont.getCollatorProcess().addSubDetection(this, superDetection);
 			int x=0;
 		}
+	}
+
+	public void setRawDataSampleRate(float sampleRate) {
+		this.rawDataSampleRate = sampleRate;
+	}
+	
+	public float getRawDataSampleRate() {
+		return this.rawDataSampleRate;
 	}
 
 }

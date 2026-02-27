@@ -25,6 +25,9 @@ import soundPlayback.ClipPlayback;
 
 public class CollatorClipDisplayPanel extends ClipDisplayPanel{
 	
+	/**
+	 * 
+	 */
 	CollatorStreamProcess collatorStreamProcess;
 	CollatorControl collatorControl;
 
@@ -58,11 +61,11 @@ public class CollatorClipDisplayPanel extends ClipDisplayPanel{
 		if(this.collatorStreamProcess==null) {
 			return true;
 		}
-		int dataChMap = dataUnit.channelBitmap;
-		int displayChMap = collatorControl.getCollatorParams().displayChannelMap;
+		/*int dataChMap = dataUnit.getClipDataUnit().getChannelBitmap();//.channelBitmap;
+		int displayChMap = collatorControl.getCollatorParams().;
 		if(!(dataChMap & displayChMap)) {
 			
-		}
+		}*/
 		if(dataUnit.getClipDataUnit() instanceof CollatorDataUnit) {
 			CollatorDataUnit du = (CollatorDataUnit) dataUnit.getClipDataUnit();
 			if(du.getStreamName().equals(collatorStreamProcess.getSetName())) {

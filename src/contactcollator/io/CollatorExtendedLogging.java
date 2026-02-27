@@ -39,7 +39,7 @@ public class CollatorExtendedLogging extends CollatorLogging{
 	public CollatorExtendedLogging(CollatorControl collatorControl, CollatorDataBlock pamDataBlock) {
 		super(collatorControl,pamDataBlock);
 		
-		PamTableDefinition table = new PamTableDefinition(collatorControl.getUnitName());
+		PamTableDefinition table = new PamTableDefinition(pamDataBlock.getDataName());
 		
 		table.addTableItem(buoyLatitude = new PamTableItem("buoyLatitude", Types.DOUBLE)); 
 		table.addTableItem(buoyLongitude = new PamTableItem("buoyLongitude", Types.DOUBLE)); 

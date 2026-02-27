@@ -36,6 +36,12 @@ public class CollatorJsonDataSource extends JSONObjectDataSource<CollatorJsonDat
 			objectData.detectionCount = triggerData.getDataList().size();
 			//newUnit.getHeadingHistogram().getData();
 		}
+		if(newUnit.getSpeciesID()!=null) {
+			objectData.speciesAnnotation = newUnit.getSpeciesID();
+		}else {
+			objectData.speciesAnnotation = "not annotated";
+		}
+		
 		//newUnit.
 		
 	}
@@ -52,6 +58,11 @@ public class CollatorJsonDataSource extends JSONObjectDataSource<CollatorJsonDat
 	@Override
 	protected void setObjectType(PamDataUnit pamDataUnit) {
 		objectData.identifier = -1;
+	}
+
+	@Override
+	protected CollatorJsonData initializeObjectData() {
+		return new CollatorJsonData();
 	}
 
 }

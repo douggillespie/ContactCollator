@@ -211,7 +211,8 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		if(this.stagedDataUnitTimer!=null && this.stagedDataUnitTimerTask!=null) {
 			if(!this.stagedDataUnitTimerTask.complete) {
 				try {
-					this.stagedDataUnitTimerTask.wait(500);
+					this.wait(500);
+					//this.stagedDataUnitTimerTask.wait(500);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -223,7 +224,9 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		}
 		this.stagedDataUnitTimerTask = new StagedDataUnitTimerTask(newDataUnit);
 		this.stagedDataUnitTimer = new Timer();
-		this.stagedDataUnitTimer.schedule(stagedDataUnitTimerTask, millisToWait+200);
+		if(millisToWait+200>0) {
+			this.stagedDataUnitTimer.schedule(stagedDataUnitTimerTask, millisToWait+200);
+		}
 	}
 	
 	/**
@@ -407,7 +410,9 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		}
 
 		CollatorDataUnit newData = new CollatorDataUnit(clipStartMillis, channelMap, clipStartSample, parameterSet.outputSampleRate, wavLength, trigger, parameterSet.setName, wavData);
-				
+		
+		newData.setRawDataSampleRate(this.rawDataBlock.getSampleRate());
+		
 		return newData;
 	}
 
