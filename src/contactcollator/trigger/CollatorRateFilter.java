@@ -14,12 +14,11 @@ import contactcollator.CollatorParamSet;
 public class CollatorRateFilter {
 
 	public static final int TRIGGER_DONTSEND = 0;
-	public static final int TRIGGER_SENDATA_NOW = 1;
+	public static final int TRIGGER_SENDDATA = 1;
 	public static final int TRIGGER_SENDUPDATE = 2;
 	public static final int TRIGGER_SENDDATA_LATER = 3;
 	
 	private CollatorTriggerData lastSent = null;
-	private CollatorTriggerData lastStaged = null;
 	private CollatorTriggerData lastUpdate = null;
 	
 	
@@ -29,25 +28,20 @@ public class CollatorRateFilter {
 		if (triggerData == null) {
 			return TRIGGER_DONTSEND;
 		}
-		
-		
-		if(lastStaged!=null && lastStaged.getStartTime()==triggerData.getStartTime()) {
-			lastSent = lastStaged = triggerData;
-			return TRIGGER_SENDUPDATE;
-		}else if(System.currentTimeMillis()<triggerData.getLastPossibleEndTime()){
-			lastSent = lastStaged = triggerData;
-			return TRIGGER_SENDDATA_LATER;
-		}
-		
 		if (lastSent != null) {
 			if (triggerData.getStartTime() > lastSent.getEndTime() && triggerData.getStartTime() > lastSent.getStartTime() + paramSet.minimumUpdateIntervalS*1000.) {
-				lastSent = lastUpdate = lastStaged = triggerData;
-				return TRIGGER_SENDATA_NOW;
+				lastSent = lastUpdate = triggerData;
+				return TRIGGER_SENDDATA;
+			}
+		}
+		if (lastUpdate != null) {
+			if (triggerData.getStartTime() > lastSent.getStartTime() && triggerData.getStartTime()<lastSent.getStartTime()+paramSet.minimumUpdateIntervalS*1000.) {
+				lastUpdate = triggerData;
+				return TRIGGER_SENDUPDATE;
 			}
 		}
 		
-		
-		lastSent = lastUpdate = lastStaged = triggerData;
-		return TRIGGER_SENDATA_NOW;
+		lastSent = lastUpdate = triggerData;
+		return TRIGGER_SENDDATA;
 	}
 }

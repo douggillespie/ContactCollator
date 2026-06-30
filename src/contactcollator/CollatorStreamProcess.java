@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -16,6 +17,7 @@ import PamguardMVC.PamObservable;
 import PamguardMVC.PamObserver;
 import PamguardMVC.PamProcess;
 import PamguardMVC.PamRawDataBlock;
+import PamguardMVC.RawDataUnavailableException;
 import PamguardMVC.dataSelector.DataSelector;
 import clickDetector.ClickDetection;
 import clipgenerator.ClipDataUnit;
@@ -133,102 +135,7 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 			newDetectionTrigger(trigger, dataUnit);
 		}
 	}
-	
-	private CollatorDataUnit createNewDataUnit(CollatorTriggerData trigger, PamDataUnit dataUnit) {
-		// sort out all the data we'll be wanting and send or update output. Probably need to decimate it, etc. 
-		// can we block the datablock here ? Or do I need to clone the clone ? 
-		ArrayList<RawDataUnit> cloneCopy = null;
-		synchronized (rawDataCopy.getSynchLock()) {
-			cloneCopy = rawDataCopy.getDataCopy();
-		}
-		/* 
-		 * that's safe ! Freed copy, can now take time decimating those data, etc. though note that this may 
-		 * still block the trigger data thread if the next stage takes more than a second or two, to may need 
-		 * to make an entirely new thread to handle these final bits of the processing?? 
-		 */
-		int firstChannel = PamUtils.getLowestChannel(trigger.getDataList().get(0).getChannelBitmap());
-		int[] channelList = new int[] {firstChannel};
-		int bitmap = PamUtils.makeChannelMap(channelList);
-		CollatorDataUnit newDataUnit = createOutputData(trigger, bitmap);
-		if (newDataUnit == null) {
-			return null;
-		}
-		BearingSummary bearingSummary = getBearingSummary(trigger);
-		if (bearingSummary != null) {
-			newDataUnit.setBearingSummary(new BearingSummaryLocalisation(newDataUnit, bearingSummary));
-		}
-		if (headingHistogram != null) {
-			newDataUnit.setHeadingHistogram(headingHistogram.clone());
-		}
-		
-		/**
-		 * Synch adding data with collatorControl, but NOT the datablock since that will really 
-		 * mess up some other threading stuff by blocking the datablock users for too long
-		 * leading to a lock. 
-		 */
-		
-		return newDataUnit;
-	}
-	
-	private void sendData(CollatorDataUnit newDataUnit) {
-		synchronized (collatorControl) {
-			collatorBlock.addPamData(newDataUnit);
-		}
-		headingHistogram.reset();
-	}
 
-	private Timer stagedDataUnitTimer;
-	
-	private StagedDataUnitTimerTask stagedDataUnitTimerTask;
-	
-	class StagedDataUnitTimerTask extends TimerTask{
-		
-		CollatorDataUnit dataUnit;
-		
-		boolean complete;
-		
-		public StagedDataUnitTimerTask(CollatorDataUnit newDataUnit) {
-			this.dataUnit = newDataUnit;
-			complete = false;
-		}
-		
-		public void updateDataUnit(CollatorDataUnit newDataUnit) {
-			this.dataUnit = newDataUnit;
-		}
-
-		@Override
-		public void run() {
-			sendData(this.dataUnit);
-			complete=true;
-		}
-		
-	}
-	
-	private synchronized void scheduleSendData(CollatorDataUnit newDataUnit,long millisToWait) {
-		if(millisToWait<=0) {
-			sendData(newDataUnit);
-		}
-		if(this.stagedDataUnitTimer!=null && this.stagedDataUnitTimerTask!=null) {
-			if(!this.stagedDataUnitTimerTask.complete) {
-				try {
-					this.wait(500);
-					//this.stagedDataUnitTimerTask.wait(500);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-			if(!this.stagedDataUnitTimerTask.complete) {
-				this.stagedDataUnitTimerTask.cancel();
-				this.stagedDataUnitTimer.cancel();
-			}
-		}
-		this.stagedDataUnitTimerTask = new StagedDataUnitTimerTask(newDataUnit);
-		this.stagedDataUnitTimer = new Timer();
-		if(millisToWait+200>0) {
-			this.stagedDataUnitTimer.schedule(stagedDataUnitTimerTask, millisToWait+200);
-		}
-	}
-	
 	/**
 	 * the system has triggered and decided it want's to make an output data unit
 	 * @param trigger trigger information
@@ -237,24 +144,37 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 	private void newDetectionTrigger(CollatorTriggerData trigger, PamDataUnit dataUnit) {
 		// TODO Auto-generated method stub
 		int option = collatorRateFilter.judgeTriggerData(parameterSet, trigger);
-		CollatorDataUnit newDataUnit = createNewDataUnit(trigger,dataUnit);
-		if(newDataUnit==null) {
-			return;
-		}
-		if (option == CollatorRateFilter.TRIGGER_SENDATA_NOW) {
-			sendData(newDataUnit);
-		}
-		if(option == CollatorRateFilter.TRIGGER_SENDDATA_LATER) {
-			long sendDelayMillis = trigger.getLastPossibleEndTime()-System.currentTimeMillis();
-			scheduleSendData(newDataUnit,sendDelayMillis);
-		}
-		if(option == CollatorRateFilter.TRIGGER_SENDUPDATE) {
-			if(this.stagedDataUnitTimerTask==null || this.stagedDataUnitTimerTask.complete) {
-				long sendDelayMillis = trigger.getLastPossibleEndTime()-System.currentTimeMillis();
-				scheduleSendData(newDataUnit,sendDelayMillis);
-			}else {
-				this.stagedDataUnitTimerTask.updateDataUnit(newDataUnit);
+		if (option == CollatorRateFilter.TRIGGER_SENDDATA) {
+			// sort out all the data we'll be wanting and send or update output. Probably need to decimate it, etc. 
+			// can we block the datablock here ? Or do I need to clone the clone ? 
+			ArrayList<RawDataUnit> cloneCopy = null;
+			synchronized (rawDataCopy.getSynchLock()) {
+				cloneCopy = rawDataCopy.getDataCopy();
 			}
+			/* 
+			 * that's safe ! Freed copy, can now take time decimating those data, etc. though note that this may 
+			 * still block the trigger data thread if the next stage takes more than a second or two, to may need 
+			 * to make an entirely new thread to handle these final bits of the processing?? 
+			 */
+			int firstChannel = PamUtils.getLowestChannel(trigger.getDataList().get(0).getChannelBitmap());
+			int[] channelList = new int[] {firstChannel};
+			int bitmap = PamUtils.makeChannelMap(channelList);
+			CollatorDataUnit newDataUnit = createOutputData(trigger, cloneCopy, bitmap);
+			if (newDataUnit == null) {
+				return;
+			}
+			BearingSummary bearingSummary = getBearingSummary(trigger);
+			if (bearingSummary != null) {
+				newDataUnit.setBearingSummary(new BearingSummaryLocalisation(newDataUnit, bearingSummary));
+			}
+			if (headingHistogram != null) {
+				newDataUnit.setHeadingHistogram(headingHistogram.clone());
+				headingHistogram.reset();
+			}
+			
+			
+			collatorTrigger.reset();
+//			wav = rawDataCopy.
 		}
 		
 	}
@@ -284,136 +204,105 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 	 * @param cloneCopy 
 	 * @param channelMap
 	 */
-	private CollatorDataUnit createOutputData(CollatorTriggerData trigger, int channelMap) {
-		int nChan = PamUtils.getNumChannels(channelMap);
-		double[][] wavData = null;
-		int wavLength = 0;
-		CollatorDataUnit newData;
-		if (parameterSet.makeWaveClip) {
-			newData = createWithWave( trigger, channelMap);
-		}
-		else {
-			newData = new CollatorDataUnit(trigger.getStartTime(), channelMap, 0, parameterSet.outputSampleRate, wavLength, trigger, parameterSet.setName, wavData);
-		}
-				
-		return newData;
-	}
-	
-	private CollatorDataUnit createWithWave(CollatorTriggerData trigger, int channelMap) {
+	private CollatorDataUnit createOutputData(CollatorTriggerData trigger, ArrayList<RawDataUnit> cloneCopy, int channelMap) {
 		int nChan = PamUtils.getNumChannels(channelMap);
 		double[][] wavData = new double[nChan][];
 		float fs = parameterSet.outputSampleRate;
 
-		ArrayList<RawDataUnit> cloneCopy = null;
-		synchronized (rawDataCopy.getSynchLock()) {
-			cloneCopy = rawDataCopy.getDataCopy();
-		}
-
 		/**
 		 * Stretch the start and end times slightly if they fit within the max length
 		 */
-		if (cloneCopy.size() == 0) {
-			return null;
+		long triggerEndTime = trigger.getEndTime();
+		long triggerStartTime = trigger.getStartTime();
+		long triggerDurationMillis = triggerEndTime-triggerStartTime;
+		int triggerDurationSamples = (int) (fs*triggerDurationMillis/1000);
+		long triggerStartSample = trigger.getDataList().get(0).getStartSample();
+		long triggerEndSample = triggerStartSample+triggerDurationSamples;
+		//long wavEnd = cloneCopy.get(cloneCopy.size()-1).getEndTimeInMilliseconds();
+		//long wavStart = cloneCopy.get(0).getTimeMilliseconds();
+		//long wavLength = wavEnd-wavStart;
+		long bufferSamples = (long) (parameterSet.minClipLengthS*fs)-(triggerDurationSamples);
+		if(bufferSamples<0) {
+			bufferSamples = (long) (parameterSet.outputClipLengthS*fs)-(triggerDurationSamples);
 		}
-		long selectEnd = trigger.getEndTime();
-		long selectStart = trigger.getStartTime();
-		long wavEnd = cloneCopy.get(cloneCopy.size()-1).getEndTimeInMilliseconds();
-		long wavStart = cloneCopy.get(0).getTimeMilliseconds();
-		if (wavEnd > selectEnd) {
-			selectEnd += (selectEnd-selectStart)/5;
-			selectEnd = Math.min(selectEnd, wavEnd);
-		}
-		if (wavStart < selectStart) {
-			selectStart = selectStart - (long) (selectEnd-selectStart)/5;
-		}
-		selectStart = Math.max(selectStart, selectEnd-(long)(parameterSet.outputClipLengthS*1000));
+		long prePost = (long) bufferSamples/2;
 		
-		long clipLengthMillis = selectEnd-selectStart;
-		if(clipLengthMillis<parameterSet.minClipLengthS*1000) {
-			long addMillis = (long) (parameterSet.minClipLengthS*1000-clipLengthMillis);
-			long addMillisSingleEnd = (long) (addMillis/2.0);
-			selectEnd = selectEnd+addMillisSingleEnd;
-			selectStart = selectStart-addMillisSingleEnd;
-		}
-//		selectStart = wavStart;
-//		selectEnd = wavEnd;
-		// allocate more data than we need, then trim it down later. 
-		int allocatedSamples = (int) ((selectEnd-selectStart) * fs / 1000.);
-		if (allocatedSamples <= 0) {
-			return null;
-		}
-//		System.out.printf("Extract %d ms from %dms available for output to %d samples\n", selectEnd-selectStart, wavEnd-wavStart, allocatedSamples);
-		for (int i = 0; i < nChan; i++) {
-			wavData[i] = new double[allocatedSamples]; 
-		}
-		int[] channelSamples = new int[nChan];
-		RawDataUnit decimatedData = null;
-		double[] raw = null;
-		long clipStartMillis = -1;
-		long clipStartSample = -1;
-//		if (decimator != null) {
-//			decimator.
-//		}
+		long clipStartSample = triggerStartSample-prePost;
+		long clipEndSample = triggerEndSample+prePost;
 		
-		for (RawDataUnit rawUnit : cloneCopy) {
-			if (rawUnit.getEndTimeInMilliseconds() < selectStart) {
-				continue;
-			}
-			if (rawUnit.getTimeMilliseconds() > selectEnd) {
-				break;
-			}
-			int rawChan = PamUtils.getSingleChannel(rawUnit.getChannelBitmap());
-			int iChan = PamUtils.getChannelPos(rawChan, channelMap);
-			if (iChan < 0) {
-				continue;
-			}
-
-			if (decimator != null) {
-				decimatedData = decimator.process(rawUnit);
-				if (decimatedData != null) {
-					raw = decimatedData.getRawData();
-				}
-			}
-			else {
-				raw = rawUnit.getRawData();
-			}
-			if (clipStartMillis < 0) {
-				clipStartMillis = rawUnit.getTimeMilliseconds();
-				clipStartSample = rawUnit.getStartSample();
-			}
-			if (raw == null) {
-				continue; // this will look messy, but should stop it crashing. 
-			}
-			int newLength = channelSamples[iChan] + raw.length;
-			if (newLength > wavData[iChan].length) {
-				wavData[iChan] = Arrays.copyOf(wavData[iChan], newLength);
-			}
-			System.arraycopy(raw, 0, wavData[iChan], channelSamples[iChan], raw.length);
-			channelSamples[iChan] += raw.length;
-		}
-		// now check the final lengths of the arrays. Very likely one or other of these will get called. 
-		for (int i = 0; i < nChan; i++) {
-			if (channelSamples[i] > allocatedSamples) {
-				// keep the end, skip the start
-				int skipSamples = channelSamples[i]-allocatedSamples;
-				clipStartMillis += skipSamples * 1000.0 / fs;
-				wavData[i] = Arrays.copyOfRange(wavData[i], channelSamples[i]-allocatedSamples, channelSamples[i]);
-			}
-			else if (channelSamples[i] < allocatedSamples) {
-				// keep the start
-				wavData[i] = Arrays.copyOf(wavData[i], channelSamples[i]);
-			}
-		}
-		int wavLength = 0;
-		if (wavData != null) {
-			wavLength = wavData[0].length;
-		}
-
-		CollatorDataUnit newData = new CollatorDataUnit(clipStartMillis, channelMap, clipStartSample, parameterSet.outputSampleRate, wavLength, trigger, parameterSet.setName, wavData);
+		int clipDurationSamples = (int) (clipEndSample-clipStartSample);
 		
-		newData.setRawDataSampleRate(this.rawDataBlock.getSampleRate());
+		long clipStartMillis = triggerStartTime-(long)(1000*prePost/fs);
+		
+		
+		CollatorDataUnit newData = new CollatorDataUnit(clipStartMillis, channelMap, clipStartSample, parameterSet.outputSampleRate, 0, trigger, parameterSet.setName, null);
+				
+		ClipRequest newRequest = new ClipRequest(clipStartSample,clipDurationSamples,newData);
+		
+		synchronized(clipRequestSynch) {
+			clipRequestQueue.add(newRequest);
+		}
 		
 		return newData;
+	}
+	
+	public int processClipRequest(ClipRequest nextClipRequest) {
+		double[][] wavData;
+		
+		CollatorDataUnit unfinishedUnit = nextClipRequest.unfinishedDataUnit;
+		
+		int firstChanIdx = PamUtils.getLowestChannel(nextClipRequest.unfinishedDataUnit.getChannelBitmap());
+		int firstChanMap = PamUtils.makeChannelMap(new int[]{firstChanIdx});
+		
+		
+		try {
+			wavData = rawDataBlock.getSamples(nextClipRequest.clipStartSample, nextClipRequest.clipDurationSamples, firstChanMap);
+		}
+		catch (RawDataUnavailableException e) {
+			return e.getDataCause();
+		}
+		
+		unfinishedUnit.setRawData(wavData);
+		unfinishedUnit.setSampleDuration((long) wavData[0].length);
+		
+		/**
+		 * Synch adding data with collatorControl, but NOT the datablock since that will really 
+		 * mess up some other threading stuff by blocking the datablock users for too long
+		 * leading to a lock. 
+		 */
+		unfinishedUnit.setParentDataBlock(collatorBlock);
+		synchronized (collatorControl) {
+			collatorBlock.addPamData(unfinishedUnit);
+		}
+		return 0;
+	}
+	
+	public void processRequestList() {
+		if (PamController.getInstance().getRunMode() != PamController.RUN_NORMAL &&
+				PamController.getInstance().getRunMode() != PamController.RUN_MIXEDMODE) {
+			return;
+		}
+		if (clipRequestQueue.size() == 0) {
+			return;
+		}
+		synchronized(clipRequestSynch) {
+			ClipRequest clipRequest;
+			ListIterator<ClipRequest> li = clipRequestQueue.listIterator();
+			int clipErr;
+			while (li.hasNext()) {
+				clipRequest = li.next();
+				clipErr = processClipRequest(clipRequest);
+				switch (clipErr) {
+					case 0: // no error - clip should have been created. 
+					case RawDataUnavailableException.DATA_ALREADY_DISCARDED:
+					case RawDataUnavailableException.INVALID_CHANNEL_LIST:
+						//					System.out.println("Clip error : " + clipErr);
+						li.remove();
+					case RawDataUnavailableException.DATA_NOT_ARRIVED:
+						continue; // hopefully, will get this next time !
+				}
+			}
+		}
 	}
 
 	public String getSetName() {
@@ -429,13 +318,32 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		collatorTrigger = new CountingTrigger(parameterSet);
 	}
 	
+	public class ClipRequest{
+		long clipStartSample;
+		int clipDurationSamples;
+		
+		CollatorDataUnit unfinishedDataUnit;
+		
+		public ClipRequest(long clipStartSample,int clipDurationSamples,CollatorDataUnit unfinishedDataUnit){
+			if(clipStartSample<0) {
+				clipStartSample=0;
+			}
+			this.clipStartSample = clipStartSample;
+			this.clipDurationSamples = clipDurationSamples;
+			this.unfinishedDataUnit = unfinishedDataUnit;
+		}
+	}
+	
 	private class RawDataObserver implements PamObserver {
-
-		public boolean pause;
+		
+		boolean pause = false;
 
 		@Override
 		public long getRequiredDataHistory(PamObservable observable, Object arg) {
-			return (long) (parameterSet.outputClipLengthS*1000.) + 3000;
+			long minH = (long) parameterSet.outputClipLengthS;
+			minH += Math.max(3000, 192000/(long)getSampleRate());
+
+			return minH;
 		}
 
 		@Override
@@ -443,13 +351,16 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 			/**
 			 * Make a copy of the data (not the raw data) into a local array. won't need much memory, so OK. 
 			 */
-			if (parameterSet.makeWaveClip == false) {
+			if(pause) {
 				return;
 			}
 			RawDataUnit in = (RawDataUnit) pamDataUnit;
 			RawDataUnit copy = new RawDataUnit(in.getTimeMilliseconds(), in.getChannelBitmap(), in.getStartSample(), in.getSampleDuration());
 			copy.setRawData(in.getRawData());
-			rawDataCopy.addPamData(copy);			
+			synchronized (rawDataCopy.getSynchLock()) {
+				rawDataCopy.addPamData(copy);
+			}
+			processRequestList();
 		}
 
 		@Override
@@ -550,6 +461,10 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		if (rawDataBlock != null) {
 			rawDataBlock.deleteObserver(rawDataObserver);
 			rawDataBlock = null;
+		}
+		if (rawDataCopy != null) {
+			rawDataCopy.deleteObserver(rawDataObserver);
+			rawDataCopy = null;
 		}
 		
 	}
