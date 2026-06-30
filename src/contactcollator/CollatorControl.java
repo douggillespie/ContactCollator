@@ -18,6 +18,7 @@ import clipgenerator.ClipDisplayDataBlock;
 import clipgenerator.clipDisplay.ClipDisplayDecorations;
 import clipgenerator.clipDisplay.ClipDisplayParent;
 import clipgenerator.clipDisplay.ClipDisplayUnit;
+import contactcollator.bearings.BearingSummary;
 import contactcollator.swing.CollatorDialog;
 import contactcollator.swing.CollatorDialogPanel;
 import contactcollator.swing.CollatorDisplayProvider;
@@ -192,6 +193,26 @@ public class CollatorControl extends PamControlledUnit implements PamSettings, C
 	 */
 	public CollatorProcess getCollatorProcess() {
 		return collatorProcess;
+	}
+	
+	@Override
+	public String getModuleSummary(boolean clear, String format) {
+		CollatorDataUnit lastUnit =  (CollatorDataUnit) this.getClipDataBlock().getLastUnit();
+		double meanBearing=0;
+		if (lastUnit == null) {
+			return "{}";
+		}else {
+			BearingSummary bearingSummary = lastUnit.getBearingSummary();
+			if(bearingSummary!=null) {
+	            meanBearing = bearingSummary.getMeanHeading();
+	        }
+			String collatorSummary = String.format("{\"lastClipUID\":%d,\"lastTriggerName\":\"%s\",\"lastTriggerTimeMillis\":%.3f,\"lastTriggerMeanBearing\":%.1f}",
+                    lastUnit.getUID(),
+                    lastUnit.triggerName,
+                    lastUnit.getTimeMilliseconds(),
+                    meanBearing);
+			return collatorSummary;
+		}
 	}
 	
 	
