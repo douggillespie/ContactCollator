@@ -39,4 +39,10 @@ public class CollatorJsonDataSource extends JSONObjectDataSource<CollatorJsonDat
 		objectData.identifier = -1;
 	}
 
+	@Override
+	protected CollatorJsonData initializeObjectData() {
+		// TODO Auto-generated method stub
+		return  new CollatorJsonData();
+	}
+
 }
