@@ -8,7 +8,7 @@ public class CollatorJsonData extends JSONObjectData{
 	float wavFs;
 	double centerBearingDegrees;
 	double bearingGroupStdDevDegrees;
-	String speciedAnnotation;
+	String speciesAnnotation;
 	String buoyId;
 	double lowFrequency;
 	double highFrequency;

@@ -67,7 +67,7 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		 *  make an internal copy of the data, it will not use much memory and means we don't have to
 		 *  lock the main raw data block for too long while preparing output 
 		 */		
-		rawDataCopy = new PamRawDataBlock("internal copy", this, 0, sampleRate);
+		rawDataCopy = new PamRawDataBlock("internal copy", this, 0, this.getSampleRate());
 		collatorRateFilter = new CollatorRateFilter();
 		
 		headingHistogram = new HeadingHistogram(24, true);
