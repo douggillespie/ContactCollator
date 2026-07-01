@@ -206,7 +206,7 @@ public class CollatorControl extends PamControlledUnit implements PamSettings, C
 			if(bearingSummary!=null) {
 	            meanBearing = bearingSummary.getMeanHeading();
 	        }
-			String collatorSummary = String.format("{\"lastClipUID\":%d,\"lastTriggerName\":\"%s\",\"lastTriggerTimeMillis\":%.3f,\"lastTriggerMeanBearing\":%.1f}",
+			String collatorSummary = String.format("{\"lastClipUID\":%d,\"lastTriggerName\":\"%s\",\"lastTriggerTimeMillis\":%d,\"lastTriggerMeanBearing\":%.1f}",
                     lastUnit.getUID(),
                     lastUnit.triggerName,
                     lastUnit.getTimeMilliseconds(),
