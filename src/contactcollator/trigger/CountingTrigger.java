@@ -14,10 +14,13 @@ public class CountingTrigger implements CollatorTrigger {
 	
 	private List<PamDataUnit> history;
 
+	private boolean inActiveTriggerState;
+	
 	public CountingTrigger(CollatorParamSet parameterSet) {
 		super();
 		this.parameterSet = parameterSet;
 		history = new LinkedList<>();
+		inActiveTriggerState = false;
 	}
 
 	@Override
@@ -54,10 +57,7 @@ public class CountingTrigger implements CollatorTrigger {
 			ListIterator<PamDataUnit> it = history.listIterator();
 			while (it.hasNext()) {
 				PamDataUnit next = it.next();
-				if (next.getTimeMilliseconds() >= minTimeMilliseconds) {
-					break;
-				}
-				else {
+				if (next.getTimeMilliseconds() < minTimeMilliseconds) {
 					it.remove();
 				}
 			}

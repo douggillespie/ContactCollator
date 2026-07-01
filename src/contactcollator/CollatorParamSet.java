@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 import PamModel.parametermanager.ManagedParameters;
 import PamModel.parametermanager.PamParameterSet;
+import PamModel.parametermanager.PamParameterSet.ParameterSetType;
 
 public class CollatorParamSet  implements ManagedParameters, Cloneable, Serializable {
 
@@ -23,6 +24,11 @@ public class CollatorParamSet  implements ManagedParameters, Cloneable, Serializ
 	 * Detector source (any detector)
 	 */
 	public String detectionSource;
+	
+	/**
+	 * Make an output clip waveform. 
+	 */
+	public boolean makeWaveClip;
 	
 	/**
 	 * Raw data to make clip from

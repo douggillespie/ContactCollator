@@ -5,11 +5,12 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import PamController.PamController;
 import PamDetection.RawDataUnit;
 import PamUtils.PamUtils;
-import PamView.paneloverlay.overlaymark.OverlayMarkObservers;
 import PamguardMVC.PamDataBlock;
 import PamguardMVC.PamDataUnit;
 import PamguardMVC.PamObservable;
@@ -96,11 +97,11 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 			return;
 		}
 		if (wantDetectionData(dataUnit)) {
-			if(dataUnit instanceof ClickDetection) {
-				int x=0;
-			}
 			useDetectionData(dataUnit);
+		}else {
+			System.out.println("Decided to not use the new detection data.");
 		}
+		
 	}
 	
 	
@@ -269,6 +270,7 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		 * mess up some other threading stuff by blocking the datablock users for too long
 		 * leading to a lock. 
 		 */
+		unfinishedUnit.setParentDataBlock(collatorBlock);
 		synchronized (collatorControl) {
 			collatorBlock.addPamData(unfinishedUnit);
 		}
@@ -414,7 +416,9 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		
 		rawDataBlock = PamController.getInstance().getRawDataBlock(parameterSet.rawDataSource);
 		if (rawDataBlock != null) {
-			rawDataBlock.addObserver(rawDataObserver, false);
+			if (parameterSet.makeWaveClip) {
+				rawDataBlock.addObserver(rawDataObserver, false);
+			}
 			rawDataCopy.setChannelMap(rawDataBlock.getChannelMap());
 			rawDataCopy.setSampleRate(rawDataBlock.getSampleRate(), false);
 			rawDataCopy.setNaturalLifetimeMillis((int) ((parameterSet.outputClipLengthS*1.1) * 1000)+20000);

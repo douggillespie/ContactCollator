@@ -16,6 +16,7 @@ public class CollatorRateFilter {
 	public static final int TRIGGER_DONTSEND = 0;
 	public static final int TRIGGER_SENDDATA = 1;
 	public static final int TRIGGER_SENDUPDATE = 2;
+	public static final int TRIGGER_SENDDATA_LATER = 3;
 	
 	private CollatorTriggerData lastSent = null;
 	private CollatorTriggerData lastUpdate = null;

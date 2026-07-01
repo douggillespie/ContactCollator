@@ -1,4 +1,3 @@
-
 package contactcollator.swing;
 
 import java.awt.Color;
@@ -18,27 +17,19 @@ import clipgenerator.ClipProcess;
 import clipgenerator.clipDisplay.ClipDisplayPanel;
 import clipgenerator.clipDisplay.ClipDisplayParent;
 import clipgenerator.clipDisplay.ClipDisplayUnit;
-import contactcollator.CollatorControl;
 import contactcollator.CollatorDataUnit;
 import contactcollator.CollatorStreamProcess;
 import soundPlayback.ClipPlayback;
 
-public class CollatorClipDisplayPanel extends ClipDisplayPanel{
+public class CollatorStreamDisplayPanel extends ClipDisplayPanel{
 	
-	/**
-	 * 
-	 */
 	CollatorStreamProcess collatorStreamProcess;
-	CollatorControl collatorControl;
 
-	public CollatorClipDisplayPanel(ClipDisplayParent clipDisplayParent) {
+	public CollatorStreamDisplayPanel(ClipDisplayParent clipDisplayParent) {
 		super(clipDisplayParent);
-		if(clipDisplayParent instanceof CollatorStreamProcess) {
-			this.collatorStreamProcess = (CollatorStreamProcess) clipDisplayParent;
-			this.setSampleRate(collatorStreamProcess.getParameterSet().outputSampleRate);
-		}else {
-			this.collatorControl = (CollatorControl) clipDisplayParent;
-		}
+		this.collatorStreamProcess = (CollatorStreamProcess) clipDisplayParent;
+		this.setSampleRate(collatorStreamProcess.getParameterSet().outputSampleRate);
+		
 	}
 	
 	public void paintEdge(CollatorDataUnit collatorDu) {
@@ -58,14 +49,7 @@ public class CollatorClipDisplayPanel extends ClipDisplayPanel{
 	
 	@Override
 	protected boolean shouldShowClip(ClipDisplayUnit dataUnit) {
-		if(this.collatorStreamProcess==null) {
-			return true;
-		}
-		/*int dataChMap = dataUnit.getClipDataUnit().getChannelBitmap();//.channelBitmap;
-		int displayChMap = collatorControl.getCollatorParams().;
-		if(!(dataChMap & displayChMap)) {
-			
-		}*/
+				
 		if(dataUnit.getClipDataUnit() instanceof CollatorDataUnit) {
 			CollatorDataUnit du = (CollatorDataUnit) dataUnit.getClipDataUnit();
 			if(du.getStreamName().equals(collatorStreamProcess.getSetName())) {

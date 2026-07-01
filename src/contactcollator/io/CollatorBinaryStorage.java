@@ -62,7 +62,7 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 
 	@Override
 	public int getModuleVersion() {
-		return 0;
+		return 165;
 	}
 
 	@Override
