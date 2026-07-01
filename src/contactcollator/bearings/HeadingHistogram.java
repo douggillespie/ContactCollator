@@ -240,6 +240,13 @@ public class HeadingHistogram implements Cloneable, Serializable {
 	 * @return the nData
 	 */
 	public double getnData() {
+		if(nData==0 && PamController.PamController.getInstance().getRunMode() == PamController.PamController.RUN_NETWORKRECEIVER) {
+			double nData = 0;
+			for(double data:getData()) {
+				nData = nData + data;
+			}
+			this.nData = nData;
+		}
 		return nData;
 	}
 

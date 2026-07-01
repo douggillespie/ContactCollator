@@ -39,17 +39,17 @@ public class CollatorPlugin implements PamPluginInterface {
 
 	@Override
 	public String getVersion() {
-		return "1.5";
+		return "1.7.0";
 	}
 
 	@Override
 	public String getPamVerDevelopedOn() {
-		return "2.02.10";
+		return "2.02.18b";
 	}
 
 	@Override
 	public String getPamVerTestedOn() {
-		return "2.02.10";
+		return "2.02.18b";
 	}
 
 	@Override

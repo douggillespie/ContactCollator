@@ -36,6 +36,11 @@ public class CollatorParamSet  implements ManagedParameters, Cloneable, Serializ
 	public String rawDataSource;
 	
 	/**
+	 * value of min clip length
+	 */
+	public float minClipLengthS = 0;
+	
+	/**
 	 * Length of output clips in seconds. 
 	 */
 	public float outputClipLengthS = 2;
@@ -62,7 +67,7 @@ public class CollatorParamSet  implements ManagedParameters, Cloneable, Serializ
 
 	@Override
 	public PamParameterSet getParameterSet() {
-		return PamParameterSet.autoGenerate(this, ParameterSetType.DETECTOR);
+		return PamParameterSet.autoGenerate(this);
 	}
 
 	@Override

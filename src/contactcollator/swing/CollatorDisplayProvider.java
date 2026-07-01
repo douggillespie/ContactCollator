@@ -2,6 +2,7 @@ package contactcollator.swing;
 
 import clipgenerator.clipDisplay.ClipDisplayPanel;
 import contactcollator.CollatorControl;
+import contactcollator.CollatorStreamProcess;
 import userDisplay.UserDisplayComponent;
 import userDisplay.UserDisplayControl;
 import userDisplay.UserDisplayProvider;
@@ -9,7 +10,16 @@ import userDisplay.UserDisplayProvider;
 public class CollatorDisplayProvider  implements UserDisplayProvider {
 	
 	private CollatorControl collatorControl;
+	public CollatorStreamProcess collatorStreamProcess;
+	public ClipDisplayPanel displayPanel;
 
+
+	public CollatorDisplayProvider(CollatorControl collatorControl,	CollatorStreamProcess collatorStreamProcess) {
+		super();
+		this.collatorControl = collatorControl;
+		this.collatorStreamProcess = collatorStreamProcess;
+	}
+	
 	public CollatorDisplayProvider(CollatorControl collatorControl) {
 		super();
 		this.collatorControl = collatorControl;
@@ -17,14 +27,23 @@ public class CollatorDisplayProvider  implements UserDisplayProvider {
 
 	@Override
 	public String getName() {
-		return collatorControl.getUnitName() + " clips";
+		if(this.collatorStreamProcess!=null) {
+			return collatorStreamProcess.getSetName() + " clips";
+		}else {
+			return this.collatorControl.getDisplayName()+" clips";
+		}
 	}
 
 	@Override
 	public UserDisplayComponent getComponent(UserDisplayControl userDisplayControl, String uniqueDisplayName) {
-		return new ClipDisplayPanel(collatorControl);
+		if(this.collatorStreamProcess!=null) {
+			displayPanel = new CollatorStreamDisplayPanel(collatorStreamProcess);
+		}else {
+			displayPanel = new CollatorCombinedDisplayPanel(this.collatorControl);
+		}
+		return displayPanel;
 	}
-
+	
 	@Override
 	public Class getComponentClass() {
 		return ClipDisplayPanel.class;
