@@ -16,6 +16,7 @@ public class CollatorRateFilter {
 	public static final int TRIGGER_DONTSEND = 0;
 	public static final int TRIGGER_SENDDATA = 1;
 	public static final int TRIGGER_SENDUPDATE = 2;
+	public static final int TRIGGER_SENDDATA_LATER = 3;
 	
 	private CollatorTriggerData lastSent = null;
 	private CollatorTriggerData lastUpdate = null;
@@ -28,15 +29,13 @@ public class CollatorRateFilter {
 			return TRIGGER_DONTSEND;
 		}
 		if (lastSent != null) {
-			if (triggerData.getStartTime() > lastSent.getEndTime() && 
-					triggerData.getStartTime() > lastSent.getStartTime() + 
-					paramSet.minimumUpdateIntervalS*1000.) {
+			if (triggerData.getStartTime() > lastSent.getEndTime() && triggerData.getStartTime() > lastSent.getStartTime() + paramSet.minimumUpdateIntervalS*1000.) {
 				lastSent = lastUpdate = triggerData;
 				return TRIGGER_SENDDATA;
 			}
 		}
 		if (lastUpdate != null) {
-			if (triggerData.getStartTime() <= lastUpdate.getEndTime()) {
+			if (triggerData.getStartTime() > lastSent.getStartTime() && triggerData.getStartTime()<lastSent.getStartTime()+paramSet.minimumUpdateIntervalS*1000.) {
 				lastUpdate = triggerData;
 				return TRIGGER_SENDUPDATE;
 			}

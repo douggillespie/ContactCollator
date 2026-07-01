@@ -38,7 +38,7 @@ public class CollatorLogging extends SQLLogging {
 	@Override
 	public void setTableData(SQLTypes sqlTypes, PamDataUnit pamDataUnit) {
 		CollatorDataUnit cdu = (CollatorDataUnit) pamDataUnit;
-		CollatorTriggerData trigDat = cdu.getTriggerData();
+		CollatorTriggerData trigDat = cdu.findTriggerData();
 		streamName.setValue(cdu.getStreamName());
 		triggerName.setValue(trigDat.getTriggerName());
 		if (trigDat.getDataList() != null) {

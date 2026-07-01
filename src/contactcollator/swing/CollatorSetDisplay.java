@@ -136,7 +136,7 @@ public class CollatorSetDisplay implements PamDialogPanel {
 			rawDataSource.setText("Unknown: " + collatorParamSet.rawDataSource);
 		}
 		else {
-			String name = sourceData.getDataName();
+			String name = sourceData.getLongDataName();
 			if (collatorParamSet.outputSampleRate != sourceData.getSampleRate()) {
 				name += String.format(", resampled at %s", FrequencyFormat.formatFrequency(collatorParamSet.outputSampleRate, true));
 			}

@@ -125,7 +125,6 @@ public class CollatorSummaryDisplay implements UserDisplayComponent, ConfigObser
 	private void newData(CollatorDataUnit collatorDataUnit) {
 		StreamSummaryPanel summaryPanel = findStreamPanel(collatorDataUnit.getStreamName());
 		if (summaryPanel == null) {
-			System.out.println("Unable to find summary stream panel for Collator data from " + collatorDataUnit.getStreamName());
 			return;
 		}
 		summaryPanel.update(collatorDataUnit);
