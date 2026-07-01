@@ -16,23 +16,23 @@ import generalDatabase.SQLTypes;
 
 public class CollatorLogging extends SQLLogging {
 	
-	//private CollatorDataBlock collatorDataBlock;
+	private CollatorDataBlock collatorDataBlock;
 	private CollatorControl collatorControl;
 	
 	private PamTableItem triggerName, streamName, nItems, endTime; 
-	protected PamTableDefinition table;
 
-	public CollatorLogging(CollatorControl collatorControl, PamDataBlock collatorDataBlock) {
+	public CollatorLogging(CollatorControl collatorControl, CollatorDataBlock collatorDataBlock) {
 		super(collatorDataBlock);
 		this.collatorControl = collatorControl;
-		//this.collatorDataBlock = collatorDataBlock;
+		this.collatorDataBlock = collatorDataBlock;
 		
-		this.table = new PamTableDefinition(collatorDataBlock.getDataName());
+		PamTableDefinition table = new PamTableDefinition(collatorControl.getUnitName());
 		table.addTableItem(streamName = new PamTableItem("Stream", Types.CHAR, 80));
 		table.addTableItem(triggerName = new PamTableItem("Trigger", Types.CHAR, 80));
 		table.addTableItem(nItems = new PamTableItem("N Contacts", Types.INTEGER));
 		table.addTableItem(endTime = new PamTableItem("End Time", Types.TIMESTAMP));
 		
+		setTableDefinition(table);
 	}
 
 	@Override

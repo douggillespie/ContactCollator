@@ -33,11 +33,9 @@ public class CollatorControl extends PamControlledUnit implements PamSettings, C
 	
 	private CollatorProcess collatorProcess;
 
-	private ArrayList<CollatorDisplayProvider> streamDisplayProviders;
+	private CollatorDisplayProvider displayProvider;
 	
 	private ArrayList<ConfigObserver> configObservers = new ArrayList<>();
-	
-	private boolean firstCallToAddStreamProviders = true;
 	
 	public CollatorControl(String unitName) {
 		super(unitType, unitName);
@@ -45,37 +43,12 @@ public class CollatorControl extends PamControlledUnit implements PamSettings, C
 		addPamProcess(collatorProcess);
 		
 		// clip like display
-		
-		
+		displayProvider = new CollatorDisplayProvider(this);
+		UserDisplayControl.addUserDisplayProvider(displayProvider);
 		// summary (bearing histogram and last clip for each stream)
 		UserDisplayControl.addUserDisplayProvider(new CollatorSummaryProvider(this));
 		
 		PamSettingManager.getInstance().registerSettings(this);
-	}
-	
-	public void addStreamProviders() {
-		if(!firstCallToAddStreamProviders) {
-			return;
-		}
-		streamDisplayProviders = new ArrayList<CollatorDisplayProvider>();
-		for(CollatorStreamProcess nextProcess:collatorProcess.getStreamProcesses()) {
-			CollatorDisplayProvider displayProvider = new CollatorDisplayProvider(this,nextProcess);
-			UserDisplayControl.addUserDisplayProvider(displayProvider);
-			streamDisplayProviders.add(displayProvider);
-		}
-		firstCallToAddStreamProviders=false;
-	}
-	
-	public CollatorDisplayProvider getStreamDisplayProvider(String streamName) {
-		if(streamDisplayProviders==null) {
-			return null;
-		}
-		for(CollatorDisplayProvider displayProvider:streamDisplayProviders) {
-			if(displayProvider.collatorStreamProcess.getProcessName().equals(streamName)) {
-				return displayProvider;
-			}
-		}
-		return null;
 	}
 
 	@Override
