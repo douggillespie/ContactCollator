@@ -2,13 +2,18 @@ package contactcollator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.TreeSet;
 
 import PamController.PamController;
+import PamDetection.AbstractLocalisation;
+import PamDetection.LocContents;
 import PamDetection.RawDataUnit;
 import PamUtils.PamUtils;
 import PamguardMVC.PamDataBlock;
@@ -19,6 +24,7 @@ import PamguardMVC.PamProcess;
 import PamguardMVC.PamRawDataBlock;
 import PamguardMVC.RawDataUnavailableException;
 import PamguardMVC.dataSelector.DataSelector;
+import PamguardMVC.superdet.SuperDetection;
 import clickDetector.ClickDetection;
 import clipgenerator.ClipDataUnit;
 import clipgenerator.ClipDisplayDataBlock;
@@ -30,6 +36,10 @@ import contactcollator.bearings.BearingSummariser;
 import contactcollator.bearings.BearingSummary;
 import contactcollator.bearings.BearingSummaryLocalisation;
 import contactcollator.bearings.HeadingHistogram;
+import contactcollator.localisations.LocalisationAverager;
+import contactcollator.localisations.LocalisationSummariser;
+import contactcollator.localisations.LocalisationSummary;
+import contactcollator.localisations.SummaryLocalisation;
 import contactcollator.trigger.CollatorRateFilter;
 import contactcollator.trigger.CollatorTrigger;
 import contactcollator.trigger.CollatorTriggerData;
@@ -99,9 +109,23 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		if (wantDetectionData(dataUnit)) {
 			useDetectionData(dataUnit);
 		}else {
-			System.out.println("Decided to not use the new detection data.");
+//			System.out.println("Decided to not use the new detection data.");
 		}
 		
+	}
+	
+	
+
+	@Override
+	public void updateData(PamObservable o, PamDataUnit dataUnit) {
+		// see if we actually want it using the data selector
+		if(PamController.getInstance().getRunMode()==PamController.RUN_NETWORKRECEIVER) {
+			return;
+		}
+		if (wantDetectionData(dataUnit)) {
+			// try to find a 2 or 3d localisation either in this unit or a super detection. 
+//			findLatLongLocalisation(dataUnit); // the localisations come in too late
+		}
 	}
 	
 	
@@ -130,9 +154,33 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		headingHistogram.addData(dataUnit);
 		
 		CollatorTriggerData trigger = collatorTrigger.newData(dataUnit);
+		boolean immediate = false;
 		if (trigger != null) {
 			// we want to do something
-			newDetectionTrigger(trigger, dataUnit);
+			if (immediate) {
+				newDetectionTrigger(trigger, dataUnit);
+			}
+			else {
+				/*
+				 *  wait two seconds for localisations to come in, then execute.
+				 *  when using the crossed bearing localiser, this causes all units
+				 *  to have a localisation, rather than the last one not having a localisation. 
+				 *  Will need to think a bit harder about how to set this delay ! 
+				 */
+				Thread t = new Thread(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							Thread.sleep(2000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						newDetectionTrigger(trigger, dataUnit);
+					}
+				});
+				t.start();
+			}
+			
 		}
 	}
 
@@ -163,6 +211,13 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 			if (newDataUnit == null) {
 				return;
 			}
+			AbstractLocalisation bestLocalisation = null;
+			LocalisationSummary locSummary = get2DLocalisationSummary(trigger);
+			if (locSummary != null) {
+				newDataUnit.setLocalisationSummary(locSummary);
+				newDataUnit.setLocalisation(new SummaryLocalisation(newDataUnit, locSummary, locSummary.getHydrophoneMap()));
+			}
+			
 			BearingSummary bearingSummary = getBearingSummary(trigger);
 			if (bearingSummary != null) {
 				newDataUnit.setBearingSummary(new BearingSummaryLocalisation(newDataUnit, bearingSummary));
@@ -196,6 +251,16 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 			bearingSummariser.addData(dataUnit);
 		}
 		return bearingSummariser.getSummary();
+	}
+	
+	/**
+	 * Get a summary of all localisations that have at least a latlong. 
+	 * @param trigger
+	 * @return 
+	 */
+	private LocalisationSummary get2DLocalisationSummary(CollatorTriggerData trigger) {
+			LocalisationSummariser summariser = new LocalisationAverager(this);
+			return summariser.summariseLocalisations(trigger);
 	}
 
 	/**

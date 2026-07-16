@@ -2,6 +2,7 @@ package contactcollator.trigger;
 
 import java.util.List;
 
+import PamUtils.PamCalendar;
 import PamguardMVC.PamDataUnit;
 
 public class CollatorTriggerData {
@@ -62,6 +63,12 @@ public class CollatorTriggerData {
 
 	public void setLastPossibleEndTime(long lastPossibleEndTime) {
 		this.lastPossibleEndTime = lastPossibleEndTime;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("Trigger %s %s - %s with %d datas", triggerName, 
+				PamCalendar.formatDBDateTime(startTime), PamCalendar.formatTime(endTime), dataList.size());
 	}
 	
 }

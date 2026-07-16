@@ -19,4 +19,12 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/x
       </plugin>
     </plugins>
   </build>
+  <dependencies>
+		<!-- https://mvnrepository.com/artifact/gov.nist.math/jama -->
+		<dependency>
+			<groupId>gov.nist.math</groupId>
+			<artifactId>jama</artifactId>
+			<version>1.0.3</version>
+		</dependency>
+  </dependencies>
 </project>

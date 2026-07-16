@@ -5,6 +5,7 @@ import java.util.ListIterator;
 
 import Localiser.algorithms.locErrors.LocaliserError;
 import PamController.PamController;
+import PamDetection.AbstractLocalisation;
 import PamguardMVC.PamDataBlock;
 import PamguardMVC.PamDataUnit;
 import PamguardMVC.RawDataHolder;
@@ -16,6 +17,8 @@ import clipgenerator.ClipDataUnit;
 import contactcollator.bearings.BearingSummary;
 import contactcollator.bearings.BearingSummaryLocalisation;
 import contactcollator.bearings.HeadingHistogram;
+import contactcollator.localisations.LocalisationSummary;
+import contactcollator.localisations.SummaryLocalisation;
 import contactcollator.trigger.CollatorTriggerData;
 import group3dlocaliser.Group3DDataUnit;
 
@@ -62,6 +65,11 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder,Clon
 	private Group3DDataUnit group3DDataUnit;
 	
 	private float rawDataSampleRate;
+
+	private String lastFoundName;
+	private PamDataBlock<PamDataUnit> lastFoundBlock;
+
+	private LocalisationSummary localisationSummary;
 	
 	//Adding final strings for group3d loc name, because the dataunits are returning null for parentdatablock
 	private final String group3dLF = "Group 3D Localiser LF, Group";
@@ -119,7 +127,7 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder,Clon
 	 */
 	public void setBearingSummary(BearingSummaryLocalisation bearingSummaryLocalisation) {
 		this.bearingSummaryLocalisation = bearingSummaryLocalisation;
-		this.setLocalisation(bearingSummaryLocalisation);
+//		this.setLocalisation(bearingSummaryLocalisation);
 	}
 
 	/**
@@ -321,8 +329,6 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder,Clon
 
 	}
 	
-	private String lastFoundName;
-	private PamDataBlock<PamDataUnit> lastFoundBlock;
 	
 	public PamDataBlock<PamDataUnit> findTriggerDataBlock(String dataName){
 		if (dataName == null) {
@@ -426,5 +432,32 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder,Clon
 	public float getRawDataSampleRate() {
 		return this.rawDataSampleRate;
 	}
+	
+	
+
+	@Override
+	public AbstractLocalisation getLocalisation() {
+//		AbstractLocalisation absLoc = super.getLocalisation();
+		if (localisationSummary != null) {
+			return new SummaryLocalisation(this, localisationSummary, localisationSummary.getHydrophoneMap());
+		}
+		else {
+			return bearingSummaryLocalisation;
+		}
+//		return absLoc;
+	}
+
+	public void setLocalisationSummary(LocalisationSummary localisationSummary) {
+		this.localisationSummary = localisationSummary;
+	}
+
+	/**
+	 * @return the setLocalisationSummary
+	 */
+	public LocalisationSummary getLocalisationSummary() {
+		return localisationSummary;
+	}
+
+
 
 }
