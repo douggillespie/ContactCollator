@@ -2,6 +2,8 @@ package contactcollator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -65,8 +67,13 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 	private List<ClipRequest> clipRequestQueue;
 	private Object clipRequestSynch = new Object();
 
-	
-	private HeadingHistogram headingHistogram;
+	/**
+	 * Now need a hash map of HeadingHistograms since we may be dealing with multiple
+	 * hydrophone clusters in different locations. 
+	 */
+//	private HeadingHistogram headingHistogram;
+	HashMap<Integer, HeadingHistogram> headingHistograms = new HashMap<Integer, HeadingHistogram>();
+	private static final int NHEADINGHISTBINS = 24;
 
 	public CollatorStreamProcess(CollatorControl collatorControl, CollatorDataBlock collatorBlock, CollatorParamSet parameterSet) {
 		super(collatorControl, null);
@@ -82,7 +89,7 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		rawDataCopy = new PamRawDataBlock("internal copy", this, 0, this.getSampleRate());
 		collatorRateFilter = new CollatorRateFilter();
 		
-		headingHistogram = new HeadingHistogram(24, true);
+//		headingHistogram = new HeadingHistogram(24, true);
 		
 		clipRequestQueue = new LinkedList<ClipRequest>();
 		
@@ -142,6 +149,22 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		}
 		return true;
 	}
+	
+	/**
+	 * Get a heading histogram for the channels. Create if required. 
+	 * @param channelMap
+	 * @return
+	 */
+	private HeadingHistogram getHeadingHistogram(int channelMap) {
+		synchronized (headingHistograms) {
+			HeadingHistogram hh = headingHistograms.get(channelMap);
+			if (hh == null) {
+				hh = new HeadingHistogram(channelMap, NHEADINGHISTBINS, true);
+				headingHistograms.put(channelMap, hh);
+			}
+			return hh;
+		}
+	}
 
 	/**
 	 * Now use the data, potentially even creating output
@@ -151,6 +174,7 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		/**
 		 * Fill the heading histrogram whether we're using this or not. 
 		 */
+		HeadingHistogram headingHistogram = getHeadingHistogram(dataUnit.getChannelBitmap());
 		headingHistogram.addData(dataUnit);
 		
 		CollatorTriggerData trigger = collatorTrigger.newData(dataUnit);
@@ -222,10 +246,19 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 			if (bearingSummary != null) {
 				newDataUnit.setBearingSummary(new BearingSummaryLocalisation(newDataUnit, bearingSummary));
 			}
-			if (headingHistogram != null) {
-				newDataUnit.setHeadingHistogram(headingHistogram.clone());
-				headingHistogram.reset();
+
+			/**
+			 * Copy all histograms (there may be 0 - many)
+			 */
+			HashMap<Integer, HeadingHistogram> mapCopy = null;
+			synchronized (headingHistograms) {
+				mapCopy = new HashMap<Integer, HeadingHistogram>(headingHistograms);
+				headingHistograms.clear();
 			}
+//			if (headingHistogram != null) {
+				newDataUnit.setHeadingHistograms(mapCopy);
+//				headingHistogram.reset();
+//			}
 			
 			
 			collatorTrigger.reset();
@@ -282,6 +315,7 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		long triggerDurationMillis = triggerEndTime-triggerStartTime;
 		int triggerDurationSamples = (int) (fs*triggerDurationMillis/1000);
 		long triggerStartSample = trigger.getDataList().get(0).getStartSample();
+		int trigChannelMap = trigger.getDataList().get(0).getChannelBitmap();
 		long triggerEndSample = triggerStartSample+triggerDurationSamples;
 		//long wavEnd = cloneCopy.get(cloneCopy.size()-1).getEndTimeInMilliseconds();
 		//long wavStart = cloneCopy.get(0).getTimeMilliseconds();
@@ -299,10 +333,12 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		
 		long clipStartMillis = triggerStartTime-(long)(1000*prePost/fs);
 		
-		
-		CollatorDataUnit newData = new CollatorDataUnit(clipStartMillis, channelMap, clipStartSample, parameterSet.outputSampleRate, 0, trigger, parameterSet.setName, null);
+		int firstTrigChan = PamUtils.getLowestChannel(trigChannelMap); 
+		firstTrigChan = 1<<firstTrigChan;
+		CollatorDataUnit newData = new CollatorDataUnit(clipStartMillis, firstTrigChan, clipStartSample, parameterSet.outputSampleRate, 0, trigger, parameterSet.setName, null);
 				
-		ClipRequest newRequest = new ClipRequest(clipStartSample,clipDurationSamples,newData);
+//		System.out.printf("Request clip data for channelMap  %d-%d\n", trigChannelMap, firstTrigChan);
+		ClipRequest newRequest = new ClipRequest(clipStartSample,clipDurationSamples,newData, firstTrigChan);
 		
 		synchronized(clipRequestSynch) {
 			clipRequestQueue.add(newRequest);
@@ -316,9 +352,10 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		
 		CollatorDataUnit unfinishedUnit = nextClipRequest.unfinishedDataUnit;
 		
-		int firstChanIdx = PamUtils.getLowestChannel(nextClipRequest.unfinishedDataUnit.getChannelBitmap());
+//		int firstChanIdx = PamUtils.getLowestChannel(nextClipRequest.unfinishedDataUnit.getChannelBitmap());
+		int firstChanIdx = nextClipRequest.firstChannel;
 		int firstChanMap = PamUtils.makeChannelMap(new int[]{firstChanIdx});
-		
+//		System.out.printf("Request wav data for channel map %d\n", firstChanMap);
 		
 		try {
 			wavData = rawDataBlock.getSamples(nextClipRequest.clipStartSample, nextClipRequest.clipDurationSamples, firstChanMap);
@@ -384,18 +421,20 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 	}
 	
 	public class ClipRequest{
+		public int firstChannel;
 		long clipStartSample;
 		int clipDurationSamples;
 		
 		CollatorDataUnit unfinishedDataUnit;
 		
-		public ClipRequest(long clipStartSample,int clipDurationSamples,CollatorDataUnit unfinishedDataUnit){
+		public ClipRequest(long clipStartSample,int clipDurationSamples,CollatorDataUnit unfinishedDataUnit, int firstChannel){
 			if(clipStartSample<0) {
 				clipStartSample=0;
 			}
 			this.clipStartSample = clipStartSample;
 			this.clipDurationSamples = clipDurationSamples;
 			this.unfinishedDataUnit = unfinishedDataUnit;
+			this.firstChannel = firstChannel;
 		}
 	}
 	

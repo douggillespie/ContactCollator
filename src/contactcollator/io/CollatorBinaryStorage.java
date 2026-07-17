@@ -7,6 +7,8 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 import PamguardMVC.DataUnitBaseData;
@@ -31,7 +33,10 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 
 	private CollatorControl collatorControl;
 	
-	private static final int CURRENTVERSION = 2;
+	/**
+	 * Increase to 3 when adding multiple heading histograms. 
+	 */
+	private static final int CURRENTVERSION = 3;
 	
 	public static final int CLIP_COLLATOR = 12000;
 
@@ -141,14 +146,17 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 				dos.writeFloat((float) stdHead);
 			}
 			
-//			% and the bearing histogram
-			HeadingHistogram headingHist = collatorDataUnit.getHeadingHistogram();
-			if (headingHist == null) {
+//			% and the bearing histograms, however many there are. 
+			HashMap<Integer, HeadingHistogram> headingHists = collatorDataUnit.getHeadingHistograms();
+			if (headingHists == null || headingHists.size() == 0) {
 				dos.writeByte(0);
 			}
 			else {
-				dos.writeByte(1);
-				headingHistogramIO.writeHeadingHist(dos, headingHist);
+				dos.writeByte(headingHists.size());
+				Collection<HeadingHistogram> hists = headingHists.values();
+				for (HeadingHistogram aHist : hists) {
+					headingHistogramIO.writeHeadingHist(dos, aHist);
+				}
 			}
 			
 			
@@ -196,9 +204,14 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 				PamVector vec = PamVector.fromHeadAndSlant(head*180.0/Math.PI, slant*180.0/Math.PI);
 				bearingSummary = new BearingSummary(n, vec, headSTD, phones, ambiguity);
 			}
-			boolean hasHeadingHist = dis.readByte()  == 0 ? false : true;
-			if (hasHeadingHist) {
+			int nHeadingHists = dis.readByte();
+			HashMap<Integer, HeadingHistogram> headingHists = null;
+			if (nHeadingHists > 0) {
+				headingHists = new HashMap<Integer, HeadingHistogram>();
+			}
+			for (int i = 0; i < nHeadingHists; i++) {
 				headingHist = headingHistogramIO.readHeadingHist(dis);
+				headingHists.put(headingHist.getChannelMap(), headingHist);
 			}
 			
 			double[][] rawData = rawDataUtils.readWavClipInt8(dis);
@@ -210,7 +223,7 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 			if(bearingSummary!=null) {
 				cdu.setBearingSummary(new BearingSummaryLocalisation(cdu, bearingSummary));
 			}
-			cdu.setHeadingHistogram(headingHist);
+			cdu.setHeadingHistograms(headingHists);
 			
 		} catch (IOException e) {
 			e.printStackTrace();

@@ -1,6 +1,7 @@
 package contactcollator;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.ListIterator;
 
 import Localiser.algorithms.locErrors.LocaliserError;
@@ -40,7 +41,8 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder,Clon
 
 	private String streamName;
 	
-	private HeadingHistogram headingHistogram;
+//	private HeadingHistogram headingHistogram;
+	private HashMap<Integer, HeadingHistogram>	headingHistograms;
 	
 	private ArrayList<Long> triggerUTCs;
 	
@@ -172,13 +174,6 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder,Clon
 		return streamName;
 	}
 
-	/**
-	 * @return the headingHistogram
-	 */
-	public HeadingHistogram getHeadingHistogram() {
-		return headingHistogram;
-	}
-
 	public String getSpeciesID() {
 		return speciesID;
 	}
@@ -266,12 +261,7 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder,Clon
 	
 	}
 
-	/**
-	 * @param headingHistogram the headingHistogram to set
-	 */
-	public void setHeadingHistogram(HeadingHistogram headingHistogram) {
-		this.headingHistogram = headingHistogram;
-	}
+
 	
 	public void setTriggerUTCs(ArrayList<Long> trigTimes) {
 		this.triggerUTCs = trigTimes;
@@ -384,10 +374,24 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder,Clon
 		newUnit.setUID(this.getUID());
 		newUnit.setDataTransforms(this.getDataTransforms());
 		newUnit.setBearingSummary(this.getBearingSummaryLocalisation());
-		newUnit.setHeadingHistogram(this.getHeadingHistogram());
+		newUnit.setHeadingHistograms(this.getHeadingHistograms());
 		newUnit.setTriggerUTCs(this.triggerUTCs);
 		return newUnit;
 		
+	}
+
+	/**
+	 * @return the headingHistograms
+	 */
+	public HashMap<Integer, HeadingHistogram> getHeadingHistograms() {
+		return headingHistograms;
+	}
+
+	/**
+	 * @param headingHistograms the headingHistograms to set
+	 */
+	public void setHeadingHistograms(HashMap<Integer, HeadingHistogram> headingHistograms) {
+		this.headingHistograms = headingHistograms;
 	}
 
 	public Group3DDataUnit getGroup3DDataUnit() {

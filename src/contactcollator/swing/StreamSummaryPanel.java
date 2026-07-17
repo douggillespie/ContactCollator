@@ -1,6 +1,7 @@
 package contactcollator.swing;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -12,6 +13,8 @@ import java.awt.GridBagLayout;
 import java.awt.Rectangle;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 import javax.swing.BoxLayout;
@@ -25,6 +28,7 @@ import PamUtils.FrequencyFormat;
 import PamUtils.PamCalendar;
 import PamUtils.PamUtils;
 import PamView.ColourArray;
+import PamView.PamColors;
 import PamView.dialog.PamGridBagContraints;
 import PamView.panel.PamPanel;
 import PamguardMVC.PamDataUnit;
@@ -159,18 +163,32 @@ public class StreamSummaryPanel {
 
 		@Override
 		public void paintHistogram(Graphics g) {
-			
-			headingPainter.paintHistrogram(g, null, getHeadingHistogram());
+			Collection<HeadingHistogram> hists = getHeadingHistogram();
+			if (hists == null) {
+				return;
+			}
+			for (HeadingHistogram hist : hists) {
+				int chans = hist.getChannelMap();
+				int firstChan = PamUtils.getLowestChannel(chans);
+				Color col = PamColors.getInstance().getChannelColor(firstChan);
+				g.setColor(col);
+				headingPainter.getSymbolData().setFillColor(col);
+				headingPainter.paintHistrogram(g, null, hist);
+			}
 		}
 		
 	}
 	
-	HeadingHistogram getHeadingHistogram() {
+	private Collection<HeadingHistogram> getHeadingHistogram() {
 		if (lastDataUnit == null) {
 			return null;
 		}
 		else {
-			return lastDataUnit.getHeadingHistogram();
+			HashMap<Integer, HeadingHistogram> hists = lastDataUnit.getHeadingHistograms();
+			if (hists == null) {
+				return null;
+			}
+			return hists.values();
 		}
 	}
 	

@@ -11,7 +11,7 @@ import java.io.IOException;
  */
 public class HeadingHistogramIO {
 	
-	private static final short CURRENT_VERSION = 1;
+	private static final short CURRENT_VERSION = 3;
 
 	/**
 	 * Write the heading histogram to a binary output stream
@@ -22,6 +22,10 @@ public class HeadingHistogramIO {
 	 */
 	public int writeHeadingHist(DataOutputStream dos, HeadingHistogram headingHist) throws IOException {
 		int currentBytes = dos.size();
+		if (CURRENT_VERSION >= 3) {
+			dos.writeShort(CURRENT_VERSION);
+			dos.writeInt(headingHist.getChannelMap());
+		}
 		int nBins = headingHist.getnBins();
 		double[] data = headingHist.getData();
 		boolean zeroCent = headingHist.isZeroCentre();
@@ -44,13 +48,17 @@ public class HeadingHistogramIO {
 	 */
 	public HeadingHistogram readHeadingHist(DataInputStream dis) throws IOException {
 		short version = dis.readShort(); // only needed if the format is changed. Currently only one!
+		int channelMap = 0;
+		if (version >= 3) {
+			channelMap = dis.readInt();
+		}
 		int nBins = dis.readShort();
 		boolean zeroCent = dis.readByte() > 0;
 		double[] data = new double[nBins];
 		for (int i = 0; i < nBins; i++) {
 			data[i] = dis.readFloat();
 		}
-		HeadingHistogram headingHist = new HeadingHistogram(nBins, zeroCent, data);
+		HeadingHistogram headingHist = new HeadingHistogram(channelMap, nBins, zeroCent, data);
 		return headingHist;
 	}
 }

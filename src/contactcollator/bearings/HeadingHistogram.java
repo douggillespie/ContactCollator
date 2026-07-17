@@ -62,15 +62,17 @@ public class HeadingHistogram implements Cloneable, Serializable {
 	 * for calls to constrainangle. For a non zero centred histrogram 
 	 * this will be 2pi-binWidth/2
 	 */
-	private double maximumAngle; 
+	private double maximumAngle;
+
+	private int channelMap; 
 	
 	/**
 	 * Create an empty heading histogram with a given number of bearing bins. 
 	 * @param nBins number of bearing bins
 	 * @param zeroCentre centre the first bearing bin at 0, otherwise it will start at 0. 
 	 */
-	public HeadingHistogram(int nBins, boolean zeroCentre) {
-		this(nBins, zeroCentre, new double[nBins]);
+	public HeadingHistogram(int channelMap, int nBins, boolean zeroCentre) {
+		this(channelMap, nBins, zeroCentre, new double[nBins]);
 	}
 
 	/**
@@ -79,7 +81,8 @@ public class HeadingHistogram implements Cloneable, Serializable {
 	 * @param zeroCentre centre the first bearing bin at 0, otherwise it will start at 0. 
 	 * @param data data array, must be same length as nBins
 	 */
-	public HeadingHistogram(int nBins, boolean zeroCentre, double[] data) {
+	public HeadingHistogram(int channelMap, int nBins, boolean zeroCentre, double[] data) {
+		this.channelMap = channelMap;
 		this.nBins = nBins;
 		this.zeroCentre = zeroCentre;
 		this.data = data;
@@ -304,6 +307,10 @@ public class HeadingHistogram implements Cloneable, Serializable {
 			e.printStackTrace();
 			return null;
 		}
+	}
+
+	public int getChannelMap() {
+		return channelMap;
 	}
 	
 }
