@@ -3,8 +3,10 @@ package contactcollator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -17,6 +19,7 @@ import PamController.PamController;
 import PamDetection.AbstractLocalisation;
 import PamDetection.LocContents;
 import PamDetection.RawDataUnit;
+import PamUtils.PamCalendar;
 import PamUtils.PamUtils;
 import PamguardMVC.PamDataBlock;
 import PamguardMVC.PamDataUnit;
@@ -178,7 +181,7 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		headingHistogram.addData(dataUnit);
 		
 		CollatorTriggerData trigger = collatorTrigger.newData(dataUnit);
-		boolean immediate = false;
+		boolean immediate = true;
 		if (trigger != null) {
 			// we want to do something
 			if (immediate) {
@@ -190,6 +193,10 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 				 *  when using the crossed bearing localiser, this causes all units
 				 *  to have a localisation, rather than the last one not having a localisation. 
 				 *  Will need to think a bit harder about how to set this delay ! 
+				 *  Except that this is buggy as all hell, so the second one just creates a second
+				 *  data unit. 
+				 *  Need to think of a better logic to remove this from queue if a new one comes in 
+				 *  within a couple of seconds. For now, leave it. 
 				 */
 				Thread t = new Thread(new Runnable() {
 					@Override
@@ -309,44 +316,146 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 
 		/**
 		 * Stretch the start and end times slightly if they fit within the max length
+		 * Logic was pretty messed up if the trigger length was a lot longer than the output
+		 * clip (which is should be), and what was happening was that it would take a section of sound 
+		 * in the middle of the trigger time. For DO whistles, that worked OK since it would usually find something, 
+		 * but for sparse sounds, like NARW, it tended to pick a time between the sounds, which was 
+		 * pretty useless. So logic is changes to pick the best sound in the list of possible trigger datas, 
+		 * and centre the clip around that time. 
 		 */
+		PamDataUnit best = getBestDataUnit(trigger.getDataList());
 		long triggerEndTime = trigger.getEndTime();
 		long triggerStartTime = trigger.getStartTime();
 		long triggerDurationMillis = triggerEndTime-triggerStartTime;
 		int triggerDurationSamples = (int) (fs*triggerDurationMillis/1000);
-		long triggerStartSample = trigger.getDataList().get(0).getStartSample();
-		int trigChannelMap = trigger.getDataList().get(0).getChannelBitmap();
-		long triggerEndSample = triggerStartSample+triggerDurationSamples;
+		long triggerStartSample = best.getStartSample();
+		int trigChannelMap = best.getChannelBitmap();
+//		long triggerEndSample = triggerStartSample+triggerDurationSamples;
 		//long wavEnd = cloneCopy.get(cloneCopy.size()-1).getEndTimeInMilliseconds();
 		//long wavStart = cloneCopy.get(0).getTimeMilliseconds();
 		//long wavLength = wavEnd-wavStart;
-		long bufferSamples = (long) (parameterSet.minClipLengthS*fs)-(triggerDurationSamples);
-		if(bufferSamples<0) {
-			bufferSamples = (long) (parameterSet.outputClipLengthS*fs)-(triggerDurationSamples);
+		// start by centering the call around the best data unit, then adjust so that it fits
+		// within the limits of the trigger data
+		long clipStart = best.getTimeMilliseconds();
+		long clipEnd = best.getEndTimeInMilliseconds();
+		// max length of the clip is the min of trig duration or total max length
+		long maxMillis = Math.min((long) (parameterSet.outputClipLengthS * 1000), triggerDurationMillis);
+		// if the length of the clip is 
+		if (clipEnd-clipStart > maxMillis) {
+			long rem = maxMillis - (clipEnd-clipStart);
+			clipStart += rem/2;
+			clipEnd -= rem/2;
 		}
-		long prePost = (long) bufferSamples/2;
+		// mnimum length is this, stretch out if needed. 
+		long minMillis = (long) (parameterSet.minClipLengthS * 1000);
+		if (clipEnd-clipStart < minMillis) {
+			long add = clipEnd-clipStart - minMillis;
+			clipStart -= add/2;
+			clipEnd += add/2;
+		}
+
+		long clipStartMillis = clipStart;
+		long clipStartSample = triggerStartSample + (long)( (clipStart - best.getTimeMilliseconds()) * fs/1000.);
+		int clipDurationSamples = (int) ((clipEnd-clipStart)*fs/1000.);
 		
-		long clipStartSample = triggerStartSample-prePost;
-		long clipEndSample = triggerEndSample+prePost;
+//		
+//		
+//		long bufferSamples = (long) (parameterSet.minClipLengthS*fs)-(triggerDurationSamples);
+//		if(bufferSamples<0) {
+//			bufferSamples = (long) (parameterSet.outputClipLengthS*fs)-(triggerDurationSamples);
+//		}
+//		long prePost = (long) bufferSamples/2;
+//		
+//		long clipStartSample = triggerStartSample-prePost;
+//		long clipEndSample = triggerEndSample+prePost;
+//		
+//		int clipDurationSamples = (int) (clipEndSample-clipStartSample);
+//		
+//		long clipStartMillis = triggerStartTime-(long)(1000*prePost/fs);
 		
-		int clipDurationSamples = (int) (clipEndSample-clipStartSample);
-		
-		long clipStartMillis = triggerStartTime-(long)(1000*prePost/fs);
+//		System.out.printf("Create clip chan %d %s to %s, starting at %s\n", trigChannelMap, PamCalendar.formatTime(triggerStartTime, true), 
+//				PamCalendar.formatTime(triggerEndTime, true), PamCalendar.formatTime(clipStartMillis, true));
 		
 		int firstTrigChan = PamUtils.getLowestChannel(trigChannelMap); 
 		firstTrigChan = 1<<firstTrigChan;
 		CollatorDataUnit newData = new CollatorDataUnit(clipStartMillis, firstTrigChan, clipStartSample, parameterSet.outputSampleRate, 0, trigger, parameterSet.setName, null);
 				
-//		System.out.printf("Request clip data for channelMap  %d-%d\n", trigChannelMap, firstTrigChan);
+//		System.out.printf("Request clip data for channelMap  %d-%d at %s\n", trigChannelMap, firstTrigChan, PamCalendar.formatTime(clipStartMillis, true));
 		ClipRequest newRequest = new ClipRequest(clipStartSample,clipDurationSamples,newData, firstTrigChan);
 		
 		synchronized(clipRequestSynch) {
+			// replace in queue - with multiple clusters, the same request can arrive many times, 
+			// which isn't great. This n
+//			Iterator<ClipRequest> clipIt = clipRequestQueue.iterator();
+//			while (clipIt.hasNext()) {
+//				CollatorTriggerData td1 = clipIt.next().unfinishedDataUnit.getTriggerData();
+//				CollatorTriggerData td2 = newRequest.unfinishedDataUnit.getTriggerData();
+//				if (clipIt.next().unfinishedDataUnit.getTriggerData() == newRequest.unfinishedDataUnit.getTriggerData()) {
+//					clipIt.remove();
+//				}
+//			}
 			clipRequestQueue.add(newRequest);
 		}
 		
 		return newData;
 	}
 	
+	/**
+	 * Get the loudest, longest, or latest. 
+	 * @param dataList
+	 * @return
+	 */
+	private PamDataUnit getBestDataUnit(List<PamDataUnit> dataList) {
+		if (dataList == null || dataList.size() == 0) {
+			return null;
+		}
+		// try to find the loudest or longest data unit. 
+		List<PamDataUnit> toSort = new ArrayList<PamDataUnit>(dataList);
+		toSort.sort(new FindBest(0));
+		PamDataUnit best = toSort.get(toSort.size()-1);
+		return best;
+	}
+	
+	private class FindBest implements Comparator<PamDataUnit> {
+		
+		
+		private long earliest = 0;
+		
+
+		/**
+		 * @param earliest earliest time for any data unit so that we select the best
+		 * one after a certain time. 
+		 */
+		public FindBest(long earliest) {
+			super();
+			this.earliest = earliest;
+		}
+
+
+		@Override
+		public int compare(PamDataUnit o1, PamDataUnit o2) {
+			if (o1.getTimeMilliseconds() < earliest) {
+				return 1;
+			}
+			// try to select on amplitude
+			Double a1 = o1.getAmplitudeDB();
+			Double a2 = o2.getAmplitudeDB();
+			if (a1 != null && a2 != null) {
+				return (int) Math.signum(a2-a1);
+			}
+			// try to select on duration
+			Double d1 = o1.getDurationInMilliseconds();
+			Double d2 = o2.getDurationInMilliseconds();
+			if (d1 != null && d2 != null) {
+				return (int) Math.signum(d2-d1);
+			}
+			
+			// give up and select on time. 
+			return (int) (o2.getTimeMilliseconds()-o1.getTimeMilliseconds());
+		}
+		
+	}
+
 	public int processClipRequest(ClipRequest nextClipRequest) {
 		double[][] wavData;
 		
@@ -356,6 +465,7 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		int firstChanIdx = nextClipRequest.firstChannel;
 		int firstChanMap = PamUtils.makeChannelMap(new int[]{firstChanIdx});
 //		System.out.printf("Request wav data for channel map %d\n", firstChanMap);
+		firstChanMap = 1;
 		
 		try {
 			wavData = rawDataBlock.getSamples(nextClipRequest.clipStartSample, nextClipRequest.clipDurationSamples, firstChanMap);

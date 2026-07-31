@@ -7,6 +7,7 @@ import java.util.ListIterator;
 import Localiser.algorithms.locErrors.LocaliserError;
 import PamController.PamController;
 import PamDetection.AbstractLocalisation;
+import PamUtils.PamCalendar;
 import PamguardMVC.PamDataBlock;
 import PamguardMVC.PamDataUnit;
 import PamguardMVC.RawDataHolder;
@@ -31,7 +32,7 @@ import group3dlocaliser.Group3DDataUnit;
  * @author dg50
  *
  */
-public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder,Cloneable {
+public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder, Cloneable {
 		
 	private CollatorTriggerData triggerData;
 	
@@ -91,6 +92,7 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder,Clon
 	 */
 	public CollatorDataUnit(long timeMilliseconds, int channelBitmap, long startSample, float sampleRate, int durationSamples, CollatorTriggerData triggerData, String streamName, double[][] wavData) {
 		super(timeMilliseconds, triggerData.getStartTime(), startSample, durationSamples, channelBitmap, null, triggerData.getTriggerName(), wavData, sampleRate);
+//		System.out.printf("Create clip at %s trig time %s\n",PamCalendar.formatDBDateTime(timeMilliseconds) , PamCalendar.formatDBDateTime(triggerData.getStartTime()));
 		this.triggerData = triggerData;
 		this.streamName = streamName;
 	}

@@ -66,7 +66,7 @@ public class CollatorProcess extends PamProcess {
 	
 	public void addSubDetection(PamDataUnit newUnit,SuperDetection detGroupDu) {
  		DataAnnotation ann = detGroupDu.getDataAnnotation(detGroupDu.getNumDataAnnotations()-1);
- 		if(detGroupDu instanceof DetectionGroupDataUnit) {
+ 		if(detGroupDu instanceof DetectionGroupDataUnit && ann != null) {
  			addAnnotation(newUnit,ann);
  		}
 

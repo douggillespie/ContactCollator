@@ -80,12 +80,14 @@ public class BearingSummariser {
 		 *  now get the standard deviation and possibly the confidence
 		 *  intervals of the bearings. 
 		 */
-		double[] angDiffs = new double[n];
-		for (int i = 0; i < n; i++) {
+		// use different n incase it's not perfectly synchronized with above useData.
+		int nn = allVectors.size();
+		double[] angDiffs = new double[nn];
+		for (int i = 0; i < nn; i++) {
 			angDiffs[i] = PamUtils.constrainedAngleR(allVectors.get(i).getHeading()-meanHead);
 		}
 		double stdAngle = std.getSTD(angDiffs);
-		return new BearingSummary(n, totalVector, stdAngle, hydrophoneMap, ambiguityCount>0);
+		return new BearingSummary(nn, totalVector, stdAngle, hydrophoneMap, ambiguityCount>0);
 	}
 	
 }
