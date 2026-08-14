@@ -7,6 +7,6 @@ import contactcollator.trigger.CollatorTriggerData;
 
 public interface LocalisationSummariser {
 
-	public LocalisationSummary summariseLocalisations(CollatorTriggerData trigger);
+	public ContactLocalisationSummary summariseLocalisations(CollatorTriggerData trigger);
 	
 }

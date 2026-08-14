@@ -9,8 +9,15 @@ import jsonStorage.JSONObjectDataSource;
 
 public class CollatorJsonDataSource extends JSONObjectDataSource<CollatorJsonData>{
 	
+	private boolean includeWav;
+
 	public CollatorJsonDataSource() {
+		this(true);
+	}
+	
+	public CollatorJsonDataSource(boolean includeWav) {
 		super();
+		this.includeWav = includeWav;
 		objectData = new CollatorJsonData();
 	}
 
@@ -18,7 +25,9 @@ public class CollatorJsonDataSource extends JSONObjectDataSource<CollatorJsonDat
 	protected void addClassSpecificFields(PamDataUnit pamDataUnit) {
 		CollatorDataUnit newUnit = (CollatorDataUnit) pamDataUnit;
 		objectData.buoyId = getpbId(newUnit.getChannelBitmap());
-		objectData.wavData = newUnit.getWaveData()[0];
+		if (includeWav) {
+			objectData.wavData = newUnit.getWaveData()[0];
+		}
 		objectData.wavFs = newUnit.getSourceSampleRate();
 		if(newUnit.getBearingSummaryLocalisation()!=null) {
 			objectData.centerBearingDegrees = newUnit.getBearingSummaryLocalisation().getRealWorldVectors()[0].getHeading();

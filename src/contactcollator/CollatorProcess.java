@@ -52,10 +52,12 @@ public class CollatorProcess extends PamProcess {
 		collatorDataBlock.setOverlayDraw(new CollatorOverlayGraphics(collatorDataBlock));
 		collatorDataBlock.SetLogging(new CollatorExtendedLogging(collatorControl, collatorDataBlock));
 		collatorDataBlock.setBinaryDataSource(new CollatorBinaryStorage(collatorControl,collatorDataBlock));
+		collatorDataBlock.setJSONDataSource(new CollatorJsonDataSource(false));
 		StandardSymbolManager symbolManager = new ClipSymbolManager(collatorDataBlock, ClipOverlayGraphics.defSymbol, true);
 		symbolManager.addSymbolOption(StandardSymbolManager.HAS_LINE_AND_LENGTH);
 		collatorDataBlock.setPamSymbolManager(symbolManager);
 		addOutputDataBlock(collatorDataBlock);
+		
 		annotatedDataBlock = new AnnotatedCollationDataBlock("Annotated_Detections",this,0);
 		annotatedDataBlock.setOverlayDraw(new CollatorOverlayGraphics(annotatedDataBlock));
 		annotatedDataBlock.SetLogging(new CollatorExtendedLogging(collatorControl, annotatedDataBlock));

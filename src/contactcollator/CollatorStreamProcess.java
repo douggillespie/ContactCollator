@@ -41,6 +41,8 @@ import contactcollator.bearings.BearingSummariser;
 import contactcollator.bearings.BearingSummary;
 import contactcollator.bearings.BearingSummaryLocalisation;
 import contactcollator.bearings.HeadingHistogram;
+import contactcollator.localisations.ContactLocalisationSummary;
+import contactcollator.localisations.GMMLocalisationSummariser;
 import contactcollator.localisations.LocalisationAverager;
 import contactcollator.localisations.LocalisationSummariser;
 import contactcollator.localisations.LocalisationSummary;
@@ -181,6 +183,12 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		headingHistogram.addData(dataUnit);
 		
 		CollatorTriggerData trigger = collatorTrigger.newData(dataUnit);
+		/*
+		 * ncollatorTrigger will return something non null whenever the count is greater than 
+		 * the minimum, then keep returning every time new data arrive, so the same trigger
+		 * will come in here manymany times from it becoming big enough, to it being expired / reset
+		 * and a new trigger being started. 
+		 */
 		boolean immediate = true;
 		if (trigger != null) {
 			// we want to do something
@@ -216,12 +224,13 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 	}
 
 	/**
-	 * the system has triggered and decided it want's to make an output data unit
+	 * the system has triggered and decided it want's to make an output data unit<br>
+	 * This will get called for every new data unit once the size of the trigger data has
+	 * become sufficiently large. 
 	 * @param trigger trigger information
 	 * @param dataUnit last data unit that went into the trigger. 
 	 */
 	private void newDetectionTrigger(CollatorTriggerData trigger, PamDataUnit dataUnit) {
-		// TODO Auto-generated method stub
 		int option = collatorRateFilter.judgeTriggerData(parameterSet, trigger);
 		if (option == CollatorRateFilter.TRIGGER_SENDDATA) {
 			// sort out all the data we'll be wanting and send or update output. Probably need to decimate it, etc. 
@@ -243,10 +252,14 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 				return;
 			}
 			AbstractLocalisation bestLocalisation = null;
-			LocalisationSummary locSummary = get2DLocalisationSummary(trigger);
+			
+			/**
+			 * Consider what to do here if there are multiple localisations within the summary. 
+			 */
+			ContactLocalisationSummary locSummary = get2DLocalisationSummary(trigger);
 			if (locSummary != null) {
 				newDataUnit.setLocalisationSummary(locSummary);
-				newDataUnit.setLocalisation(new SummaryLocalisation(newDataUnit, locSummary, locSummary.getHydrophoneMap()));
+//				newDataUnit.setLocalisation(new SummaryLocalisation(newDataUnit, locSummary, locSummary.getHydrophoneMap()));
 			}
 			
 			BearingSummary bearingSummary = getBearingSummary(trigger);
@@ -298,8 +311,11 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 	 * @param trigger
 	 * @return 
 	 */
-	private LocalisationSummary get2DLocalisationSummary(CollatorTriggerData trigger) {
-			LocalisationSummariser summariser = new LocalisationAverager(this);
+	private ContactLocalisationSummary get2DLocalisationSummary(CollatorTriggerData trigger) {
+//			LocalisationSummariser summariser = new LocalisationAverager(this);
+//		System.out.printf("Get localisation summary for %d calls\n", trigger.getDataList().size());
+		LocalisationSummariser summariser = new GMMLocalisationSummariser(this);
+		
 			return summariser.summariseLocalisations(trigger);
 	}
 

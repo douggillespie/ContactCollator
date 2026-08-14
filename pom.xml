@@ -21,10 +21,23 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/x
   </build>
   <dependencies>
 		<!-- https://mvnrepository.com/artifact/gov.nist.math/jama -->
-		<dependency>
-			<groupId>gov.nist.math</groupId>
-			<artifactId>jama</artifactId>
-			<version>1.0.3</version>
-		</dependency>
+	<dependency>
+		<groupId>gov.nist.math</groupId>
+		<artifactId>jama</artifactId>
+		<version>1.0.3</version>
+	</dependency>
+	<!-- https://mvnrepository.com/artifact/nz.ac.waikato.cms.weka/weka-dev -->
+	<dependency>
+		<groupId>nz.ac.waikato.cms.weka</groupId>
+		<artifactId>weka-dev</artifactId>
+		<version>3.7.7</version>
+	</dependency>
+	<!-- Source: https://mvnrepository.com/artifact/org.apache.spark/spark-mllib 
+	<dependency>
+    	<groupId>org.apache.spark</groupId>
+    	<artifactId>spark-mllib_2.13</artifactId>
+    	<version>3.5.1</version>
+    	<scope>provided</scope>
+	</dependency>-->
   </dependencies>
 </project>

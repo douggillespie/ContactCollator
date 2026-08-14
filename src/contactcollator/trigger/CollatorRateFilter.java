@@ -23,17 +23,23 @@ public class CollatorRateFilter {
 	private CollatorTriggerData lastUpdate = null;
 	
 	
-	
+	/**
+	 * Decide what we want to d with the trigger data which can be to do nothing (if it's null), 
+	 * or to senddata if it's not been send before or if 
+	 * @param paramSet
+	 * @param triggerData
+	 * @return
+	 */
 	public int judgeTriggerData(CollatorParamSet paramSet, CollatorTriggerData triggerData) {
 		// keep it really simple for now. If it overlaps, update, otherwise send new.
 		if (triggerData == null) {
 			return TRIGGER_DONTSEND;
 		}
 		if (lastSent != null) {
-			long thisStart = triggerData.getStartTime();
-			long lastEnd = lastSent.getEndTime();
-			long diff = thisStart-lastEnd;
-			boolean same = lastSent == triggerData;
+//			long thisStart = triggerData.getStartTime();
+//			long lastEnd = lastSent.getEndTime();
+//			long diff = thisStart-lastEnd;
+//			boolean same = lastSent == triggerData;
 //			System.out.printf("Trigger gap is %d millis at %s for%s %s and %s\n", diff, PamCalendar.formatTime(thisStart, true), 
 //					same ? " same data" : " different", lastSent, triggerData);
 			if (triggerData.getStartTime() > lastSent.getEndTime() && triggerData.getStartTime() > lastSent.getStartTime() + paramSet.minimumUpdateIntervalS*1000.) {

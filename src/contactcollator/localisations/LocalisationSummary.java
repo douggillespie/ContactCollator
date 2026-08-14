@@ -17,15 +17,19 @@ public class LocalisationSummary {
 
 	private int hydrophoneMap;
 
+	private int nEntries;
+
 	/**
 	 * @param latLong
 	 * @param localiserError
+	 * @param nEntries 
 	 */
-	public LocalisationSummary(LatLong latLong, LocaliserError localiserError, int hydrophoneMap) {
+	public LocalisationSummary(LatLong latLong, LocaliserError localiserError, int hydrophoneMap, int nEntries) {
 		super();
 		this.latLong = latLong;
 		this.localiserError = localiserError;
 		this.setHydrophoneMap(hydrophoneMap);
+		this.nEntries = nEntries;
 	}
 
 	/**

@@ -19,6 +19,7 @@ import clipgenerator.ClipDataUnit;
 import contactcollator.bearings.BearingSummary;
 import contactcollator.bearings.BearingSummaryLocalisation;
 import contactcollator.bearings.HeadingHistogram;
+import contactcollator.localisations.ContactLocalisationSummary;
 import contactcollator.localisations.LocalisationSummary;
 import contactcollator.localisations.SummaryLocalisation;
 import contactcollator.trigger.CollatorTriggerData;
@@ -72,7 +73,7 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder, Clo
 	private String lastFoundName;
 	private PamDataBlock<PamDataUnit> lastFoundBlock;
 
-	private LocalisationSummary localisationSummary;
+	private ContactLocalisationSummary localisationSummary;
 	
 	//Adding final strings for group3d loc name, because the dataunits are returning null for parentdatablock
 	private final String group3dLF = "Group 3D Localiser LF, Group";
@@ -445,22 +446,22 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder, Clo
 	public AbstractLocalisation getLocalisation() {
 //		AbstractLocalisation absLoc = super.getLocalisation();
 		if (localisationSummary != null) {
-			return new SummaryLocalisation(this, localisationSummary, localisationSummary.getHydrophoneMap());
+			if (localisationSummary.getSummaries().size() > 0) {
+				LocalisationSummary firstLoc = localisationSummary.getSummaries().get(0);
+				return new SummaryLocalisation(this, firstLoc, firstLoc.getHydrophoneMap());
+			}
 		}
-		else {
-			return bearingSummaryLocalisation;
-		}
-//		return absLoc;
+		return bearingSummaryLocalisation;
 	}
 
-	public void setLocalisationSummary(LocalisationSummary localisationSummary) {
+	public void setLocalisationSummary(ContactLocalisationSummary localisationSummary) {
 		this.localisationSummary = localisationSummary;
 	}
 
 	/**
 	 * @return the setLocalisationSummary
 	 */
-	public LocalisationSummary getLocalisationSummary() {
+	public ContactLocalisationSummary getLocalisationSummary() {
 		return localisationSummary;
 	}
 
