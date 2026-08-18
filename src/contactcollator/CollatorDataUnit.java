@@ -79,6 +79,8 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder, Clo
 	private final String group3dLF = "Group 3D Localiser LF, Group";
 	private final String group3dMF = "Group 3D Localiser MF, Group";
 
+	private String jsonLocalisationError;
+
 	
 
 	/**
@@ -374,6 +376,7 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder, Clo
 				this.getTriggerData(),
 				this.getStreamName(),
 				this.getWaveData());
+		newUnit.setBasicData(getBasicData().clone());
 		newUnit.setUID(this.getUID());
 		newUnit.setDataTransforms(this.getDataTransforms());
 		newUnit.setBearingSummary(this.getBearingSummaryLocalisation());
@@ -464,6 +467,22 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder, Clo
 	public ContactLocalisationSummary getLocalisationSummary() {
 		return localisationSummary;
 	}
+
+	/**
+	 * Set a localisation error string
+	 * @param jsonError
+	 */
+	public void setJsonLocalisationError(String jsonError) {
+		this.jsonLocalisationError = jsonError;
+	}
+
+	/**
+	 * @return the jsonLocalisationError
+	 */
+	public String getJsonLocalisationError() {
+		return jsonLocalisationError;
+	}
+	
 
 
 

@@ -1,5 +1,6 @@
 package contactcollator.localisations;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -41,15 +42,15 @@ public abstract class BasicLocalisationSummariser implements LocalisationSummari
 	}
 	
 	/**
-	 * Get a sorted set of localised units, note that these may 
+	 * Get a list of localised units, note that these may 
 	 * be super detections of the original list of units that went in. 
 	 * @param dataList
 	 * @return
 	 */
-	public Set<PamDataUnit> getLocalisedUnits(List<PamDataUnit> dataList) {
+	public ArrayList<PamDataUnit> getLocalisedUnits(List<PamDataUnit> dataList) {
 		int nUnits = dataList.size();
 		int nLocs = 0;
-		Set<PamDataUnit> localisedUnits = new TreeSet();
+		ArrayList<PamDataUnit> localisedUnits = new ArrayList();
 		for (PamDataUnit dataUnit : dataList) {
 			PamDataUnit loc = findLatLongLocalisation(dataUnit);
 			if (loc != null) {
@@ -57,6 +58,7 @@ public abstract class BasicLocalisationSummariser implements LocalisationSummari
 				localisedUnits.add(loc);
 			}
 		}
+//		localisedUnits.so
 		return localisedUnits;
 	}
 	/**
@@ -120,15 +122,15 @@ public abstract class BasicLocalisationSummariser implements LocalisationSummari
 	 * @param nRandom number of random points to add, based on error, for each latLong
 	 * @return summary localisation and error. 
 	 */
-	protected LocalisationSummary getAverageLocalisation(LatLong[] latLongs, LocaliserError[] errors, int hydrophoneMap, int nRandom) {
+	protected LocalisationSummary getAverageLocalisation(long startMillis, long endMillis, LatLong[] latLongs, LocaliserError[] errors, int hydrophoneMap, int nRandom) {
 		if (errors == null) {
 			nRandom = 1;
 		}
 		if (errors == null || nRandom == 1) {
-			return getAverageLocalisation(latLongs, hydrophoneMap);
+			return getAverageLocalisation(startMillis, endMillis, latLongs, hydrophoneMap);
 		}
 		if (latLongs.length == 1) {
-			return new LocalisationSummary(latLongs[0], errors == null ? null : errors[0], hydrophoneMap, 1);
+			return new LocalisationSummary(startMillis, endMillis, latLongs[0], errors == null ? null : errors[0], hydrophoneMap, 1);
 		}
 		/*
 		 *  otherwise we need to generate a load of points and average them to get a better overall distribution
@@ -145,7 +147,7 @@ public abstract class BasicLocalisationSummariser implements LocalisationSummari
 		}
 		EllipticalError err = getErrEllipse(randoms, mean);
 		
-		return new LocalisationSummary(mean, err, hydrophoneMap, latLongs.length);
+		return new LocalisationSummary(startMillis, endMillis, mean, err, hydrophoneMap, latLongs.length);
 	}
 
 	/**
@@ -169,19 +171,28 @@ public abstract class BasicLocalisationSummariser implements LocalisationSummari
 
 		return latLong.addDistanceMeters(shift);
 	}
-	private LatLong shiftElliptical(LatLong latLong, EllipticalError ellipticalError) {
+	
+	/**
+	 * Shift lat long by a random ammount around elliptical error. 
+	 * @param latLong
+	 * @param ellipticalError
+	 * @return
+	 */
+	public LatLong shiftElliptical(LatLong latLong, EllipticalError ellipticalError) {
 		double[] angles = ellipticalError.getAngles();
 		double[] mags = ellipticalError.getEllipseDim();
+		double[] rMags = new double[mags.length];
 		if (angles == null || mags == null) {
 			return latLong;
 		}
 		for (int i = 0; i < mags.length; i++) {
-			mags[i] *= random.nextGaussian();
+			rMags[i] = mags[i] * random.nextGaussian();
 		}
-		double x = Math.cos(angles[0])*mags[0];
-		double y = Math.sin(angles[0])*mags[0];
-		x += Math.sin(angles[1]) * mags[1];
-		y += Math.cos(angles[1]) * mags[1];
+		double ang = Math.PI/2-angles[0];
+		double x = Math.cos(ang)*rMags[0];
+		double y = Math.sin(ang)*rMags[0];
+		x += Math.sin(ang) * rMags[1];
+		y += Math.cos(ang) * rMags[1];
 		return latLong.addDistanceMeters(x, y);
 	}
 
@@ -191,10 +202,10 @@ public abstract class BasicLocalisationSummariser implements LocalisationSummari
 	 * @param hydrophoneMap
 	 * @return
 	 */
-	private LocalisationSummary getAverageLocalisation(LatLong[] latLongs, int hydrophoneMap) {
+	private LocalisationSummary getAverageLocalisation(long startMillis, long endMillis, LatLong[] latLongs, int hydrophoneMap) {
 		LatLong ave = LatLong.getMean(latLongs);
 		EllipticalError err = getErrEllipse(latLongs, ave);
-		return new LocalisationSummary(ave, err, hydrophoneMap, latLongs.length);
+		return new LocalisationSummary(startMillis, endMillis, ave, err, hydrophoneMap, latLongs.length);
 	}
 	
 	/**
@@ -226,10 +237,10 @@ public abstract class BasicLocalisationSummariser implements LocalisationSummari
 		double[][] pointMatrix = {xPoints, yPoints};
 		Matrix points = new Matrix(pointMatrix);
 		// do final assessment in two stages to get down to one degree accuracy. 
-		EllipticalError err1 = getErrEllipse(points, 0, 180, 2);
-//		double a = Math.toDegrees(err1.getAngles()[0]);
-//		EllipticalError err2 = getErrEllipse(points, a-5, a+5, 1);
-		return err1;
+		EllipticalError err1 = getErrEllipse(points, 0, 180, 10);
+		double a = Math.toDegrees(err1.getAngles()[0]);
+		EllipticalError err2 = getErrEllipse(points, a-5, a+5, 1);
+		return err2;
 	}
 	
 	/**
@@ -257,7 +268,7 @@ public abstract class BasicLocalisationSummariser implements LocalisationSummari
 			double[] yr = rotated.getArray()[0];
 			double xSpan = std.getSTD(xr);
 			double ySpan = std.getSTD(yr);
-			double span = xSpan*ySpan;
+			double span = ySpan;
 //			System.out.printf("Angle %3.0f xSpan %3.1fm ySpan %3.1fm, a=%3.1fm^2\n", a, xSpan, ySpan, xSpan*ySpan);
 			if (span < bestError) {
 				bestError = span;
@@ -267,6 +278,7 @@ public abstract class BasicLocalisationSummariser implements LocalisationSummari
 			}
 		}
 		bestAngle *= Math.PI/180; // convert back to radians.
+//		bestAngle = Math.PI-bestAngle;
 		double[] errAngles = {bestAngle, 0, 0.};
 		double[] bestErr = {bestXSpan, bestYSpan, 0.};
 		EllipticalError err = new EllipticalError(errAngles, bestErr);

@@ -15,12 +15,15 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeSet;
 
+import Localiser.algorithms.locErrors.LocaliserError;
 import PamController.PamController;
 import PamDetection.AbstractLocalisation;
 import PamDetection.LocContents;
 import PamDetection.RawDataUnit;
+import PamUtils.LatLong;
 import PamUtils.PamCalendar;
 import PamUtils.PamUtils;
+import PamguardMVC.DataUnitBaseData;
 import PamguardMVC.PamDataBlock;
 import PamguardMVC.PamDataUnit;
 import PamguardMVC.PamObservable;
@@ -499,12 +502,64 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		 * leading to a lock. 
 		 */
 		unfinishedUnit.setParentDataBlock(collatorBlock);
+
+		/*
+		 * Bit messy, but by the time we get here, there may be multiple localisations in the data unit. 
+		 * in which case we need to generate multiple output data units. Later, we may revise this and 
+		 * change to a single massive json summary of all localisation data in the unit ? 
+		 */
+		CollatorDataUnit[] splitUnits = splitLocalisations(unfinishedUnit);
+		
 		synchronized (collatorControl) {
-			collatorBlock.addPamData(unfinishedUnit);
+			for (int i = 0; i < splitUnits.length; i++) {
+				collatorBlock.addPamData(splitUnits[i]);
+			}
 		}
 		return 0;
 	}
 	
+	/**
+	 * Split up an output unit into multiple units if the clustering algorithm has suggested multiple sources. 
+	 * @param collatorData
+	 * @return
+	 */
+	private CollatorDataUnit[] splitLocalisations(CollatorDataUnit collatorData) {
+		ContactLocalisationSummary locSummary = collatorData.getLocalisationSummary();
+		if (locSummary == null) {
+			CollatorDataUnit[] outs = {collatorData};
+			return outs;
+		}
+		// otherwise split the unit up. 
+		ArrayList<LocalisationSummary> summaries = locSummary.getSummaries();
+		CollatorDataUnit[] outs = new CollatorDataUnit[summaries.size()];
+		DataUnitBaseData baseData = collatorData.getBasicData();
+		for (int i = 0; i < outs.length; i++) {
+			outs[i] = collatorData.clone();
+			LocalisationSummary locSum = summaries.get(i);
+			if (locSum == null) {
+				continue; // should never happen, perhaps let it just throw exception ? 
+			}
+			outs[i].setChannelBitmap(locSum.getHydrophoneMap());
+			LatLong latLong = locSum.getLatLong();
+			if (latLong != null) {
+				outs[i].setSourceLat(latLong.getLatitude());
+				outs[i].setSourceLon(latLong.getLongitude());
+			}
+			LocaliserError err = locSum.getLocaliserError();
+			if (err != null) {
+				String j = err.getJsonErrorString();
+				outs[i].setJsonLocalisationError(j);
+//				double[] mags = err.
+			}
+			ArrayList<LocalisationSummary> newList = new ArrayList<LocalisationSummary>();
+			newList.add(locSum);
+			ContactLocalisationSummary newSummary = new ContactLocalisationSummary(locSummary.getMethod(), newList);
+			outs[i].setLocalisationSummary(newSummary);
+			outs[i].setLocalisation(new SummaryLocalisation(outs[i], locSum, locSum.getHydrophoneMap()));
+		}
+		return outs;
+	}
+
 	public void processRequestList() {
 		if (PamController.getInstance().getRunMode() != PamController.RUN_NORMAL &&
 				PamController.getInstance().getRunMode() != PamController.RUN_MIXEDMODE) {

@@ -26,7 +26,7 @@ public class LocalisationAverager extends BasicLocalisationSummariser {
 	@Override
 	public ContactLocalisationSummary summariseLocalisations(CollatorTriggerData trigger) {
 		// get a set of units that have a latlong. 
-		Set<PamDataUnit> locUnits = getLocalisedUnits(trigger.getDataList());
+		ArrayList<PamDataUnit> locUnits = getLocalisedUnits(trigger.getDataList());
 		if (locUnits.size() == 0) {
 			return null;
 		}
@@ -35,6 +35,9 @@ public class LocalisationAverager extends BasicLocalisationSummariser {
 		Iterator<PamDataUnit> it = locUnits.iterator();
 		int hydrophones = 0;
 		ArrayList<AbstractLocalisation> allLocs = new ArrayList();
+		/**
+		 * Make two identical lists now, of the units, and their localisations. 
+		 */
 		while (it.hasNext()) {
 			PamDataUnit unit = it.next();
 			AbstractLocalisation loc = unit.getLocalisation();
@@ -51,7 +54,8 @@ public class LocalisationAverager extends BasicLocalisationSummariser {
 		if (locUnits.size() == 1) {
 			// single unit, so just return its localisatoin data. 
 			AbstractLocalisation loc = locUnits.iterator().next().getLocalisation();
-			return new ContactLocalisationSummary("location Averager", new LocalisationSummary(loc.getLatLong(0), loc.getLocError(0), hydrophones, 1));
+			return new ContactLocalisationSummary("location Averager", 
+					new LocalisationSummary(trigger.getStartTime(), trigger.getEndTime(), loc.getLatLong(0), loc.getLocError(0), hydrophones, 1));
 		}
 		LatLong[] lls = new LatLong[allLocs.size()];
 		LocaliserError[] errs = new LocaliserError[allLocs.size()];
@@ -61,7 +65,7 @@ public class LocalisationAverager extends BasicLocalisationSummariser {
 			errs[i] = loc.getLocError(0);
 			i++;
 		}
-		LocalisationSummary locSum = getAverageLocalisation(lls, errs, hydrophones, 10);
+		LocalisationSummary locSum = getAverageLocalisation(trigger.getStartTime(), trigger.getEndTime(), lls, errs, hydrophones, 10);
 		return new ContactLocalisationSummary("Location Average", locSum);
 		
 	}

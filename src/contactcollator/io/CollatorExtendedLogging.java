@@ -31,6 +31,7 @@ public class CollatorExtendedLogging extends CollatorLogging{
 	 speciesId,
 	 sourceLatitude,
 	 sourceLongitude,
+	 jsonLocalisationError,
 	 sourceLocalizationError0,
 	 sourceLocalizationError1,
 	 groupd3DLocalizationStreamName,
@@ -39,7 +40,8 @@ public class CollatorExtendedLogging extends CollatorLogging{
 	public CollatorExtendedLogging(CollatorControl collatorControl, CollatorDataBlock pamDataBlock) {
 		super(collatorControl,pamDataBlock);
 		
-		PamTableDefinition table = new PamTableDefinition(pamDataBlock.getDataName());
+//		PamTableDefinition table = new PamTableDefinition(pamDataBlock.getDataName());
+		PamTableDefinition table = super.getTableDefinition();
 		
 		table.addTableItem(buoyLatitude = new PamTableItem("buoyLatitude", Types.DOUBLE)); 
 		table.addTableItem(buoyLongitude = new PamTableItem("buoyLongitude", Types.DOUBLE)); 
@@ -52,6 +54,7 @@ public class CollatorExtendedLogging extends CollatorLogging{
 		table.addTableItem(speciesId = new PamTableItem("speciesId", Types.CHAR,10)); 
 		table.addTableItem(sourceLatitude = new PamTableItem("sourceLatitude", Types.DOUBLE)); 
 		table.addTableItem(sourceLongitude = new PamTableItem("sourceLongitude", Types.DOUBLE)); 
+		table.addTableItem(jsonLocalisationError = new PamTableItem("LocalizationError", Types.VARCHAR));
 		table.addTableItem(sourceLocalizationError0 = new PamTableItem("sourceLocalizationError0", Types.DOUBLE)); 
 		table.addTableItem(sourceLocalizationError1 = new PamTableItem("sourceLocalizationError1", Types.DOUBLE));
 		table.addTableItem(group3DLocalizationUID = new PamTableItem("group3DLocalizationUID", Types.BIGINT));
@@ -70,6 +73,8 @@ public class CollatorExtendedLogging extends CollatorLogging{
 		
 		sourceLatitude.setValue(newUnit.getSourceLat());
 		sourceLongitude.setValue(newUnit.getSourceLon());
+		
+		jsonLocalisationError.setValue(newUnit.getJsonLocalisationError());
 			
 		sourceLocalizationError0.setValue(newUnit.getSourceErrorMagnitude0());
 		sourceLocalizationError1.setValue(newUnit.getSourceErrorMagnitude1());
@@ -101,21 +106,24 @@ public class CollatorExtendedLogging extends CollatorLogging{
 			 hasBearing.setValue(false);
 		 }else {
 			 hasBearing.setValue(true);
-			 double bearingReArray = newUnit.getLocalisation().getAngles()[0];
-			 Double head = streamer.getHeading();
-			 if (head != null) {
-				 double headingRadians = head*Math.PI/180;
-				 double bearingReN = bearingReArray+headingRadians;
-				 bearing0.setValue(bearingReN);
-			 }
-			 else {
-				 bearing0.setValue(null);
-			 }
-			 if(newUnit.getLocalisation().getAngleErrors()!=null) {
-				 bearingError.setValue(newUnit.getLocalisation().getAngleErrors()[0]);
-			 }
-			 else {
-				 bearingError.setValue(null);
+			 double[] angles = newUnit.getLocalisation().getAngles();
+			 if (angles != null) {
+				 double bearingReArray = angles[0];
+				 Double head = streamer.getHeading();
+				 if (head != null) {
+					 double headingRadians = head*Math.PI/180;
+					 double bearingReN = bearingReArray+headingRadians;
+					 bearing0.setValue(bearingReN);
+				 }
+				 else {
+					 bearing0.setValue(null);
+				 }
+				 if(newUnit.getLocalisation().getAngleErrors()!=null) {
+					 bearingError.setValue(newUnit.getLocalisation().getAngleErrors()[0]);
+				 }
+				 else {
+					 bearingError.setValue(null);
+				 }
 			 }
 		 }
 		speciesId.setValue(newUnit.getSpeciesID());

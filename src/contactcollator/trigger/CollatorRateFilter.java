@@ -25,7 +25,7 @@ public class CollatorRateFilter {
 	
 	/**
 	 * Decide what we want to d with the trigger data which can be to do nothing (if it's null), 
-	 * or to senddata if it's not been send before or if 
+	 * or to senddata if it's not been send before or if nothing has been sent for sufficiently long. 
 	 * @param paramSet
 	 * @param triggerData
 	 * @return

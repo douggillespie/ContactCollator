@@ -40,7 +40,7 @@ public class GMMLocalisationSummariser extends BasicLocalisationSummariser {
 	public ContactLocalisationSummary summariseLocalisations(CollatorTriggerData trigger) {
 		// get a set of units that have a latlong.
 		// initial code here is similar to in Averager. 
-		Set<PamDataUnit> locUnits = getLocalisedUnits(trigger.getDataList());
+		ArrayList<PamDataUnit> locUnits = getLocalisedUnits(trigger.getDataList());
 		if (locUnits.size() == 0) {
 			return null;
 		}
@@ -63,7 +63,8 @@ public class GMMLocalisationSummariser extends BasicLocalisationSummariser {
 		if (locUnits.size() == 1) {
 			// single unit, so just return its localisation data. 
 			AbstractLocalisation loc = locUnits.iterator().next().getLocalisation();
-			return new ContactLocalisationSummary("GMM Single Cluster",  new LocalisationSummary(loc.getLatLong(0), loc.getLocError(0), hydrophones, 1));
+			return new ContactLocalisationSummary("GMM Single Cluster",  
+					new LocalisationSummary(trigger.getStartTime(), trigger.getEndTime(), loc.getLatLong(0), loc.getLocError(0), hydrophones, 1));
 		}
 
 		// can put everything straight into Weka data formats. 
@@ -110,7 +111,7 @@ public class GMMLocalisationSummariser extends BasicLocalisationSummariser {
 		try {
 			gmmClusterer.setNumClusters(3); 
 			gmmClusterer.setMaxIterations(100); // Set maximum iterations for EM convergence
-//			gmmClusterer.setMinStdDev(5);
+			gmmClusterer.setMinStdDev(50);
 
 			// 4. Train the model
 			System.out.printf("Training Gaussian Mixture Model...");
@@ -163,11 +164,21 @@ public class GMMLocalisationSummariser extends BasicLocalisationSummariser {
 //				System.out.println("Why is there a zero length group?");
 				continue;
 			}
+			// get the start and end times for those units. 
+			PamDataUnit locUnit = locUnits.get(inds[0]);
+			long startMillis = locUnit.getTimeMilliseconds();
+			long endMillis = locUnit.getEndTimeInMilliseconds();
+			for (int u = 1; u < inds.length; u++) {
+				locUnit = locUnits.get(u);
+				startMillis = Math.min(startMillis, locUnit.getTimeMilliseconds());
+				endMillis = Math.max(endMillis, locUnit.getEndTimeInMilliseconds());
+			}
+			
 			LatLong[] groupLL = pickLatLongs(lls, inds);
 			LocaliserError[] groupErrors = pickLocaliserErrors(localiserErrors, inds);
 			int nRandom = Math.max(30/groupLL.length, 5);
 			System.out.printf("Cluster %d %d/%d has %d localisations, gen %d random points for each\n", i, clusterOrder[i], nClus, inds.length, nRandom);
-			LocalisationSummary summary = getAverageLocalisation(groupLL, groupErrors, hydrophones, nRandom);
+			LocalisationSummary summary = getAverageLocalisation( startMillis, endMillis, groupLL, groupErrors, hydrophones, nRandom);
 			summaryList.add(summary);
 			nUsed += inds.length;
 			if ((double) nUsed / (double) data.numInstances() > 0.8) {

@@ -11,6 +11,7 @@ import PamUtils.LatLong;
  */
 public class LocalisationSummary {
 
+	private long startMillis, endMillis; // start and end times for units contributing to this
 	private LatLong latLong;
 	
 	private LocaliserError localiserError;
@@ -24,8 +25,10 @@ public class LocalisationSummary {
 	 * @param localiserError
 	 * @param nEntries 
 	 */
-	public LocalisationSummary(LatLong latLong, LocaliserError localiserError, int hydrophoneMap, int nEntries) {
+	public LocalisationSummary(long startMillis, long endMillis, LatLong latLong, LocaliserError localiserError, int hydrophoneMap, int nEntries) {
 		super();
+		this.startMillis = startMillis;
+		this.endMillis = endMillis;
 		this.latLong = latLong;
 		this.localiserError = localiserError;
 		this.setHydrophoneMap(hydrophoneMap);
@@ -71,6 +74,48 @@ public class LocalisationSummary {
 
 	public void setHydrophoneMap(int hydrophoneMap) {
 		this.hydrophoneMap = hydrophoneMap;
+	}
+
+	/**
+	 * @return the startMillis
+	 */
+	public long getStartMillis() {
+		return startMillis;
+	}
+
+	/**
+	 * @param startMillis the startMillis to set
+	 */
+	public void setStartMillis(long startMillis) {
+		this.startMillis = startMillis;
+	}
+
+	/**
+	 * @return the endMillis
+	 */
+	public long getEndMillis() {
+		return endMillis;
+	}
+
+	/**
+	 * @param endMillis the endMillis to set
+	 */
+	public void setEndMillis(long endMillis) {
+		this.endMillis = endMillis;
+	}
+
+	/**
+	 * @return the nEntries
+	 */
+	public int getnEntries() {
+		return nEntries;
+	}
+
+	/**
+	 * @param nEntries the nEntries to set
+	 */
+	public void setnEntries(int nEntries) {
+		this.nEntries = nEntries;
 	}
 	
 }
