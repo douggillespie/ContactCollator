@@ -56,4 +56,10 @@ public class ContactLocalisationSummary {
 		this.method = method;
 	}
 	
+	@Override
+	public String toString() {
+		String str = String.format("Contact Loc Summary: %d sumaries", summaries.size());
+		return str;
+	}
+	
 }

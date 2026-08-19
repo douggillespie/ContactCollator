@@ -482,6 +482,27 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder, Clo
 	public String getJsonLocalisationError() {
 		return jsonLocalisationError;
 	}
+
+	@Override
+	public String getSummaryString() {
+		String str = super.getSummaryString();
+		if (triggerData.getDataList() != null) {
+			String more = String.format("<br>N entries: %d<br>", triggerData.getDataList().size());
+			AbstractLocalisation loc = getLocalisation();
+			if (loc != null) {
+				more += loc.toString() + "<br>";
+				LocaliserError locErr = loc.getLocError(0);
+				if (locErr != null) {
+					more += locErr.toString() + "<br>";
+				}
+			}
+			int pos = str.indexOf("<p><b>Trigger:</b><br>");
+			if (pos < 0) 
+				pos = str.length();
+			str = str.substring(0, pos-1) + more + str.substring(pos);
+		}
+		return str;
+	}
 	
 
 

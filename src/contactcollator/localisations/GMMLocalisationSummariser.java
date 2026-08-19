@@ -82,7 +82,7 @@ public class GMMLocalisationSummariser extends BasicLocalisationSummariser {
 			iP++;
 		}
 		LatLong meanLatLong = LatLong.getMean(lls);
-		meanLatLong = new LatLong(0,0);
+//		meanLatLong = new LatLong(0,0);
 		
 		Instances	data = new Instances("Position data", coordinateAttributes, locUnits.size());
 		it = locUnits.iterator();
@@ -114,9 +114,9 @@ public class GMMLocalisationSummariser extends BasicLocalisationSummariser {
 			gmmClusterer.setMinStdDev(50);
 
 			// 4. Train the model
-			System.out.printf("Training Gaussian Mixture Model...");
+//			System.out.printf("Training Gaussian Mixture Model...");
 			gmmClusterer.buildClusterer(data);
-			System.out.printf("  returned %d clusters from %d entries\n", gmmClusterer.numberOfClusters(), data.size());
+//			System.out.printf("  returned %d clusters from %d entries\n", gmmClusterer.numberOfClusters(), data.size());
 		}
 		catch (Exception e) {
 			System.out.println(e.toString());
@@ -139,17 +139,17 @@ public class GMMLocalisationSummariser extends BasicLocalisationSummariser {
 			try {
 				clusterID[i] = gmmClusterer.clusterInstance(instance);
 				clusterCount[clusterID[i]]++;
-				System.out.printf("GMM Entry %2d assigned %d is at %4.0f,%4.0f from origin\n", i ,clusterID[i], xy[0], xy[1]);
+//				System.out.printf("GMM Entry %2d assigned %d is at %4.0f,%4.0f from origin\n", i ,clusterID[i], xy[0], xy[1]);
 //				System.out.printf("%d, ", clusterID[i]);
 				double[] softAssignments = gmmClusterer.distributionForInstance(instance);
 				clusterProb[i] = softAssignments[clusterID[i]];
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
-//				e.printStackTrace();
+				e.printStackTrace();
 			}
 		}
 		int[] clusterOrder = IndexSort.sortArray(clusterCount);
-		System.out.printf("\n");
+//		System.out.printf("\n");
 		/*
 		 *  now go through clusters in reverse order, so we output the one with most entries first, and 
 		 *  don't do any that have < 10% of total number.
@@ -177,7 +177,7 @@ public class GMMLocalisationSummariser extends BasicLocalisationSummariser {
 			LatLong[] groupLL = pickLatLongs(lls, inds);
 			LocaliserError[] groupErrors = pickLocaliserErrors(localiserErrors, inds);
 			int nRandom = Math.max(30/groupLL.length, 5);
-			System.out.printf("Cluster %d %d/%d has %d localisations, gen %d random points for each\n", i, clusterOrder[i], nClus, inds.length, nRandom);
+//			System.out.printf("Cluster %d %d/%d has %d localisations, gen %d random points for each\n", i, clusterOrder[i], nClus, inds.length, nRandom);
 			LocalisationSummary summary = getAverageLocalisation( startMillis, endMillis, groupLL, groupErrors, hydrophones, nRandom);
 			summaryList.add(summary);
 			nUsed += inds.length;

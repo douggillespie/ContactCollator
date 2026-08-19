@@ -262,6 +262,7 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 			ContactLocalisationSummary locSummary = get2DLocalisationSummary(trigger);
 			if (locSummary != null) {
 				newDataUnit.setLocalisationSummary(locSummary);
+//				System.out.printf("Locations summaries for %s: %s\n", dataUnit.toString(), locSummary.toString());
 //				newDataUnit.setLocalisation(new SummaryLocalisation(newDataUnit, locSummary, locSummary.getHydrophoneMap()));
 			}
 			
@@ -278,11 +279,29 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 				mapCopy = new HashMap<Integer, HeadingHistogram>(headingHistograms);
 				headingHistograms.clear();
 			}
-//			if (headingHistogram != null) {
-				newDataUnit.setHeadingHistograms(mapCopy);
-//				headingHistogram.reset();
-//			}
-			
+			//			if (headingHistogram != null) {
+			newDataUnit.setHeadingHistograms(mapCopy);
+			//				headingHistogram.reset();
+			//			}		
+			//				System.out.printf("Request clip data for channelMap  %d-%d at %s\n", trigChannelMap, firstTrigChan, PamCalendar.formatTime(clipStartMillis, true));
+			int firstTrigChan = PamUtils.getLowestChannel(newDataUnit.getChannelBitmap());
+			long durSamples = newDataUnit.getSampleDuration();
+			ClipRequest newRequest = new ClipRequest(newDataUnit.getStartSample(),(int) durSamples,newDataUnit, firstTrigChan);
+
+			synchronized(clipRequestSynch) {
+				// replace in queue - with multiple clusters, the same request can arrive many times, 
+				// which isn't great. This n
+				//					Iterator<ClipRequest> clipIt = clipRequestQueue.iterator();
+				//					while (clipIt.hasNext()) {
+				//						CollatorTriggerData td1 = clipIt.next().unfinishedDataUnit.getTriggerData();
+				//						CollatorTriggerData td2 = newRequest.unfinishedDataUnit.getTriggerData();
+				//						if (clipIt.next().unfinishedDataUnit.getTriggerData() == newRequest.unfinishedDataUnit.getTriggerData()) {
+				//							clipIt.remove();
+				//						}
+				//					}
+				clipRequestQueue.add(newRequest);
+			}
+
 			
 			collatorTrigger.reset();
 //			wav = rawDataCopy.
@@ -397,24 +416,8 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		
 		int firstTrigChan = PamUtils.getLowestChannel(trigChannelMap); 
 		firstTrigChan = 1<<firstTrigChan;
-		CollatorDataUnit newData = new CollatorDataUnit(clipStartMillis, firstTrigChan, clipStartSample, parameterSet.outputSampleRate, 0, trigger, parameterSet.setName, null);
-				
-//		System.out.printf("Request clip data for channelMap  %d-%d at %s\n", trigChannelMap, firstTrigChan, PamCalendar.formatTime(clipStartMillis, true));
-		ClipRequest newRequest = new ClipRequest(clipStartSample,clipDurationSamples,newData, firstTrigChan);
+		CollatorDataUnit newData = new CollatorDataUnit(clipStartMillis, firstTrigChan, clipStartSample, parameterSet.outputSampleRate, clipDurationSamples, trigger, parameterSet.setName, null);
 		
-		synchronized(clipRequestSynch) {
-			// replace in queue - with multiple clusters, the same request can arrive many times, 
-			// which isn't great. This n
-//			Iterator<ClipRequest> clipIt = clipRequestQueue.iterator();
-//			while (clipIt.hasNext()) {
-//				CollatorTriggerData td1 = clipIt.next().unfinishedDataUnit.getTriggerData();
-//				CollatorTriggerData td2 = newRequest.unfinishedDataUnit.getTriggerData();
-//				if (clipIt.next().unfinishedDataUnit.getTriggerData() == newRequest.unfinishedDataUnit.getTriggerData()) {
-//					clipIt.remove();
-//				}
-//			}
-			clipRequestQueue.add(newRequest);
-		}
 		
 		return newData;
 	}
@@ -476,8 +479,8 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 	}
 
 	public int processClipRequest(ClipRequest nextClipRequest) {
-		double[][] wavData;
 		
+		double[][] wavData = null;
 		CollatorDataUnit unfinishedUnit = nextClipRequest.unfinishedDataUnit;
 		
 //		int firstChanIdx = PamUtils.getLowestChannel(nextClipRequest.unfinishedDataUnit.getChannelBitmap());
@@ -485,16 +488,19 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		int firstChanMap = PamUtils.makeChannelMap(new int[]{firstChanIdx});
 //		System.out.printf("Request wav data for channel map %d\n", firstChanMap);
 		firstChanMap = 1;
+		int errorType = 0;
 		
 		try {
 			wavData = rawDataBlock.getSamples(nextClipRequest.clipStartSample, nextClipRequest.clipDurationSamples, firstChanMap);
 		}
 		catch (RawDataUnavailableException e) {
-			return e.getDataCause();
+			errorType = e.getDataCause();
 		}
 		
+		if (errorType == 0) {
 		unfinishedUnit.setRawData(wavData);
 		unfinishedUnit.setSampleDuration((long) wavData[0].length);
+		}
 		
 		/**
 		 * Synch adding data with collatorControl, but NOT the datablock since that will really 
@@ -515,7 +521,7 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 				collatorBlock.addPamData(splitUnits[i]);
 			}
 		}
-		return 0;
+		return errorType;
 	}
 	
 	/**
@@ -577,9 +583,11 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 				clipErr = processClipRequest(clipRequest);
 				switch (clipErr) {
 					case 0: // no error - clip should have been created. 
+						li.remove();
+						break;
 					case RawDataUnavailableException.DATA_ALREADY_DISCARDED:
 					case RawDataUnavailableException.INVALID_CHANNEL_LIST:
-						//					System.out.println("Clip error : " + clipErr);
+//						System.out.println("Clip ?error : " + clipErr);
 						li.remove();
 					case RawDataUnavailableException.DATA_NOT_ARRIVED:
 						continue; // hopefully, will get this next time !

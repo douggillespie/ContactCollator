@@ -126,6 +126,9 @@ public abstract class BasicLocalisationSummariser implements LocalisationSummari
 		if (errors == null) {
 			nRandom = 1;
 		}
+		if (nRandom <= 0)  {
+			nRandom = 1;
+		}
 		if (errors == null || nRandom == 1) {
 			return getAverageLocalisation(startMillis, endMillis, latLongs, hydrophoneMap);
 		}
@@ -279,8 +282,8 @@ public abstract class BasicLocalisationSummariser implements LocalisationSummari
 		}
 		bestAngle *= Math.PI/180; // convert back to radians.
 //		bestAngle = Math.PI-bestAngle;
-		double[] errAngles = {bestAngle, 0, 0.};
-		double[] bestErr = {bestXSpan, bestYSpan, 0.};
+		double[] errAngles = {bestAngle, 0, -1};
+		double[] bestErr = {bestXSpan, bestYSpan, -1};
 		EllipticalError err = new EllipticalError(errAngles, bestErr);
 		return err;
 	}
