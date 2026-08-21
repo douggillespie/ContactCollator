@@ -26,7 +26,8 @@ public class LocalisationAverager extends BasicLocalisationSummariser {
 	@Override
 	public ContactLocalisationSummary summariseLocalisations(CollatorTriggerData trigger) {
 		// get a set of units that have a latlong. 
-		ArrayList<PamDataUnit> locUnits = getLocalisedUnits(trigger.getDataList());
+		LocalisationSets localisationSet = getLocalisedUnits(trigger.getDataList());
+		ArrayList<PamDataUnit> locUnits = localisationSet.getLocalised();
 		if (locUnits.size() == 0) {
 			return null;
 		}

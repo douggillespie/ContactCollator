@@ -47,20 +47,51 @@ public abstract class BasicLocalisationSummariser implements LocalisationSummari
 	 * @param dataList
 	 * @return
 	 */
-	public ArrayList<PamDataUnit> getLocalisedUnits(List<PamDataUnit> dataList) {
+	public LocalisationSets getLocalisedUnits(List<PamDataUnit> dataList) {
 		int nUnits = dataList.size();
 		int nLocs = 0;
 		ArrayList<PamDataUnit> localisedUnits = new ArrayList();
+		ArrayList<PamDataUnit> bearingUnits = new ArrayList();
+		ArrayList<PamDataUnit> nothingUnits = new ArrayList();
 		for (PamDataUnit dataUnit : dataList) {
 			PamDataUnit loc = findLatLongLocalisation(dataUnit);
 			if (loc != null) {
 				nLocs++;
-				localisedUnits.add(loc);
+				// beware of duplicates e.g. if the loc unit is from a crossed bearings. 
+				if (localisedUnits.contains(loc) == false) {
+					localisedUnits.add(loc);
+				}
+			}
+			else {
+			    AbstractLocalisation hasBearing = findBearingLocalisation(dataUnit);
+			    if (hasBearing != null) {
+			    	bearingUnits.add(dataUnit);
+			    }
+			    else {
+			    	nothingUnits.add(dataUnit);
+			    }
 			}
 		}
-//		localisedUnits.so
-		return localisedUnits;
+		return new LocalisationSets(localisedUnits, bearingUnits, nothingUnits);
 	}
+	
+	/**
+	 * See if there is a localisation that has bearing information
+	 * @param dataUnit
+	 * @return
+	 */
+	private AbstractLocalisation findBearingLocalisation(PamDataUnit pamDataUnit) {
+		AbstractLocalisation loc = pamDataUnit.getLocalisation();
+		if (loc == null) {
+			return null;
+		}
+		PamVector[] vec = loc.getWorldVectors();
+		if (vec == null || vec.length == 0) {
+			return null;
+		}
+		return loc;
+	}
+
 	/**
 	 * Perform an iterative search through a detection and all it's super detections in hope of finding
 	 * a latlong localisation. 
@@ -286,5 +317,41 @@ public abstract class BasicLocalisationSummariser implements LocalisationSummari
 		double[] bestErr = {bestXSpan, bestYSpan, -1};
 		EllipticalError err = new EllipticalError(errAngles, bestErr);
 		return err;
+	}
+	
+	/**
+	 * Group a load of detections by hydrophone group. 
+	 * @param dataUnits
+	 * @return
+	 */
+	public ArrayList<SuperDetection> groupByHydrophones(ArrayList<PamDataUnit> dataUnits) {
+		if (dataUnits == null) {
+			return null;
+		}
+		ArrayList<SuperDetection> superDets = new ArrayList<SuperDetection>();
+		for (PamDataUnit aUnit : dataUnits) {
+			SuperDetection superDet = findChannelMatch(superDets, aUnit);
+			if (superDet == null) {
+				superDet = new SuperDetection<PamDataUnit>(aUnit.getBasicData().clone());
+				superDets.add(superDet);
+			}
+			superDet.addSubDetection(aUnit);
+		}
+		return superDets;
+	}
+	
+	/**
+	 * Find a super detection that has an overlapping channel map. 
+	 * @param superDets
+	 * @param aUnit
+	 * @return
+	 */
+	private SuperDetection findChannelMatch(ArrayList<SuperDetection> superDets, PamDataUnit aUnit) {
+		for (SuperDetection sDet : superDets) {
+			if ((sDet.getChannelBitmap() & aUnit.getChannelBitmap()) != 0) {
+				return sDet;
+			}
+		}
+		return null;
 	}
 }

@@ -21,12 +21,15 @@ public class CollatorLogging extends SQLLogging {
 	
 	private PamTableItem triggerName, streamName, nItems, endTime; 
 
-	public CollatorLogging(CollatorControl collatorControl, CollatorDataBlock collatorDataBlock) {
+	public CollatorLogging(CollatorControl collatorControl, CollatorDataBlock collatorDataBlock, String name) {
 		super(collatorDataBlock);
 		this.collatorControl = collatorControl;
 		this.collatorDataBlock = collatorDataBlock;
 		
-		PamTableDefinition table = new PamTableDefinition(collatorControl.getUnitName());
+		if (name == null) {
+			name = collatorControl.getUnitName();
+		}
+		PamTableDefinition table = new PamTableDefinition(name);
 		table.addTableItem(streamName = new PamTableItem("Stream", Types.CHAR, 80));
 		table.addTableItem(triggerName = new PamTableItem("Trigger", Types.CHAR, 80));
 		table.addTableItem(nItems = new PamTableItem("N Contacts", Types.INTEGER));

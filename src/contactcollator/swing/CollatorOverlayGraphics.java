@@ -35,7 +35,9 @@ public class CollatorOverlayGraphics extends PamDetectionOverlayGraphics {
 		if (localisationSummary != null) {
 			return drawLocalisationSummary(g, collatorDataUnit, generalProjector);
 		}
-		return super.drawOnMap(g, pamDetection, generalProjector);
+		else {
+			return super.drawOnMap(g, pamDetection, generalProjector);
+		}
 	}
 
 	// similar to other draw, but has multiple localisations. 
@@ -45,21 +47,40 @@ public class CollatorOverlayGraphics extends PamDetectionOverlayGraphics {
 		for (int i = 0; i < locs.size(); i++) {
 			LocalisationSummary ls = locs.get(i);
 			LatLong latLong = ls.getLatLong();
-			LocaliserError err = ls.getLocaliserError();
-			if (latLong == null) {
-				continue;
+			Double meanBering = ls.getMeanBearing();
+			if (latLong != null) {
+				drawLatLongSummary(g, collatorDataUnit, generalProjector, ls);
 			}
-			PamSymbol symbol = getPamSymbol(collatorDataUnit, generalProjector);
-			Coordinate3d c3d = generalProjector.getCoord3d(latLong);
-			symbol.draw(g, c3d.getXYPoint());
-			if (err == null) {
-				continue;
+			if (meanBering != null) {
+				drawBearingSummary(g, collatorDataUnit, generalProjector, ls);
 			}
-			LocErrorGraphics errDraw = err.getErrorDraw();
-			TransformShape shape = errDraw.drawOnMap(g, collatorDataUnit, latLong, generalProjector, symbol.getLineColor());
-			generalProjector.addHoverData(c3d, collatorDataUnit);
+			
 		}
 		return null;
+	}
+	
+	private Rectangle drawLatLongSummary(Graphics g, CollatorDataUnit collatorDataUnit,
+			GeneralProjector generalProjector, LocalisationSummary latLongSummary) {
+
+		LatLong latLong = latLongSummary.getLatLong();
+		PamSymbol symbol = getPamSymbol(collatorDataUnit, generalProjector);
+		Coordinate3d c3d = generalProjector.getCoord3d(latLong);
+		symbol.draw(g, c3d.getXYPoint());
+		LocaliserError err = latLongSummary.getLocaliserError();
+		if (err != null) {
+			LocErrorGraphics errDraw = err.getErrorDraw();
+			if (errDraw != null) {
+				TransformShape shape = errDraw.drawOnMap(g, collatorDataUnit, latLong, generalProjector, symbol.getLineColor());
+			}
+		}
+		generalProjector.addHoverData(c3d, collatorDataUnit);
+		return null;
+	}
+
+	private Rectangle drawBearingSummary(Graphics g, CollatorDataUnit collatorDataUnit,
+			GeneralProjector generalProjector, LocalisationSummary latLongSummary) {
+		Rectangle md = super.drawOnMap(g, collatorDataUnit, generalProjector);
+		return md;
 	}
 
 }

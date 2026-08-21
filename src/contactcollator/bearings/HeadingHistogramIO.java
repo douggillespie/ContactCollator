@@ -22,15 +22,14 @@ public class HeadingHistogramIO {
 	 */
 	public int writeHeadingHist(DataOutputStream dos, HeadingHistogram headingHist) throws IOException {
 		int currentBytes = dos.size();
-		if (CURRENT_VERSION >= 3) {
-			dos.writeShort(CURRENT_VERSION);
-			dos.writeInt(headingHist.getChannelMap());
-		}
 		int nBins = headingHist.getnBins();
 		double[] data = headingHist.getData();
 		boolean zeroCent = headingHist.isZeroCentre();
 		
 		dos.writeShort(CURRENT_VERSION);
+		if (CURRENT_VERSION >= 3) {
+			dos.writeInt(headingHist.getChannelMap());
+		}
 		dos.writeShort(nBins);
 		dos.writeByte(zeroCent ? 1 : 0);
 		for (int i = 0; i < nBins; i++) {

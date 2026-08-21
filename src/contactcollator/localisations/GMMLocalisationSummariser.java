@@ -5,14 +5,19 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 
+import Localiser.algorithms.locErrors.BearingError;
 import Localiser.algorithms.locErrors.LocaliserError;
 import PamDetection.AbstractLocalisation;
 import PamDetection.LocContents;
 import PamUtils.LatLong;
+import PamUtils.PamUtils;
 import PamUtils.sort.IndexSort;
 import PamguardMVC.PamDataUnit;
+import PamguardMVC.superdet.SuperDetection;
 import contactcollator.CollatorStreamProcess;
 import contactcollator.trigger.CollatorTriggerData;
+import pamMaths.PamVector;
+import pamMaths.STD;
 import weka.clusterers.EM;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -27,21 +32,167 @@ public class GMMLocalisationSummariser extends BasicLocalisationSummariser {
 
 	private static final int MAX_MIXTURES = 3;
 	private ArrayList<Attribute> coordinateAttributes;
+	private STD std = new STD();
 
 	public GMMLocalisationSummariser(CollatorStreamProcess collatorStreamProcess) {
 		super(collatorStreamProcess);
 
 		coordinateAttributes = new ArrayList();
-		coordinateAttributes.add(new Attribute("Lon"));
-		coordinateAttributes.add(new Attribute("Lat"));
+		coordinateAttributes.add(new Attribute("x"));
+		coordinateAttributes.add(new Attribute("y"));
 	}
 
 	@Override
 	public ContactLocalisationSummary summariseLocalisations(CollatorTriggerData trigger) {
 		// get a set of units that have a latlong.
 		// initial code here is similar to in Averager. 
-		ArrayList<PamDataUnit> locUnits = getLocalisedUnits(trigger.getDataList());
-		if (locUnits.size() == 0) {
+		LocalisationSets localisationSet = getLocalisedUnits(trigger.getDataList());
+		ContactLocalisationSummary fullSummary = getLocalisedSummary(trigger, localisationSet.getLocalised());
+
+		ContactLocalisationSummary bearingSummary = getBearingSummary(trigger, localisationSet.getBearinged());
+		
+		return combineSummaries(fullSummary, bearingSummary, null);
+	}
+	
+	/**
+	 * Find an intelligent way of combining localisations that may contain lat longs, bearings only, or nothing. 
+	 * For now, just pick what seems best. 
+	 * @param latLongs summaries that have lat longs
+	 * @param bearings summaries that have only a bearing
+	 * @param nothings summaries that have nothing
+	 * @return
+	 */
+	public ContactLocalisationSummary combineSummaries(ContactLocalisationSummary latLongs, ContactLocalisationSummary bearings, ContactLocalisationSummary nothings) {
+		if (latLongs != null) {
+			return latLongs;
+		}
+		if (bearings != null) {
+			return bearings;
+		}
+		return nothings;
+	}
+	
+	/**
+	 * Get a summary of localisations that only have a bearing. Use a clustering algorithm to 
+	 * generate multiple bearings if it seems sensible. 
+	 * @param trigger
+	 * @param bearinged list of units that have a localisation that can return a bearing vector. 
+	 * @return
+	 */
+	private ContactLocalisationSummary getBearingSummary(CollatorTriggerData trigger,
+			ArrayList<PamDataUnit> bearinged) {
+		if (bearinged == null || bearinged.size() == 0) {
+			return null;
+		}
+		/*
+		 *  use Weka clustering algorithm. do x and y separately, also consider that the data
+		 *  may come from multiple hydrophone clusters, so will also need to do each of those clusters 
+		 *  separately.   
+		 */
+		ArrayList<SuperDetection> groups = groupByHydrophones(bearinged);
+		if (groups == null) {
+			return null;
+		}
+		
+		ArrayList<LocalisationSummary> summaryList = new ArrayList<LocalisationSummary>();
+		
+		for (int iGroup = 0; iGroup < groups.size(); iGroup++) {
+			SuperDetection hydGroup = groups.get(iGroup);
+			ArrayList<PamDataUnit> units = hydGroup.getSubDetections();
+			int n = units.size();
+			// prepare clustering
+			Instances	data = new Instances("Position data", coordinateAttributes, n);
+			for (int i = 0; i < n; i++) {
+				PamDataUnit aUnit = units.get(i);
+				AbstractLocalisation loc = aUnit.getLocalisation();
+				if (loc == null) {
+					continue; // should never happen since we selected units with localisation
+				}
+				PamVector[] vec = loc.getRealWorldVectors();
+				if (vec == null) {
+					continue; // should never happen since we selected units with localisation
+				}
+				double[] xy = {vec[0].getElement(0), vec[0].getElement(1)};
+				data.add(new DenseInstance(1, xy)); // weight is 1 on everything. Probably a unit vector, so generating a circle. 
+			}
+
+			EM gmmClusterer = new EM();
+			int nClus = 0;
+			int[] clusterCount = null;
+			int[] clusterInds = null;
+			try {
+//				gmmClusterer.setNumClusters(3); 
+				gmmClusterer.setMaxIterations(100); // Set maximum iterations for EM convergence
+				// start with a 5 degree min standard deviation
+				gmmClusterer.setMinStdDev(Math.toRadians(2.5));
+
+				// Train the model
+//				System.out.printf("Training Gaussian Mixture Model...");
+				gmmClusterer.buildClusterer(data);
+				nClus = gmmClusterer.numberOfClusters();
+//				System.out.printf("Hydrophone group 0x%X has %d bearing clusters from %d units\n", hydGroup.getChannelBitmap(), nClus, n);
+				clusterInds = new int[data.size()];
+				clusterCount = new int[nClus];
+				for (int i = 0; i < data.size(); i++) {
+					clusterInds[i] = gmmClusterer.clusterInstance(data.get(i));
+					clusterCount[clusterInds[i]] ++; // get a count of every cluster. 
+				}
+			}
+			catch (Exception e) {
+				System.out.println(e.toString());
+				continue;
+			}
+			// sort the clusters by size
+			int[] clusterOrder = IndexSort.sortArray(clusterCount);
+			// extract the ind's and do similar rejection of outliers.
+			int nUsed = 0;
+			for (int c = nClus-1; c >= 0; c--) {
+				int[] inds = getClusterInds(clusterInds, clusterOrder[c]);
+				// get the mean bearing and the standard deviation around that. 
+				// to get the mean, need to use xy, but for SD, can use bearings about the mean
+				double x = 0, y = 0;
+				for (int i = 0; i < inds.length; i++) {
+					double[] xy = data.get(inds[i]).toDoubleArray();
+					x += xy[0];
+					y += xy[1];
+				}
+				double meanAngle = Math.atan2(y, x);
+				double[] dA = new double[inds.length];
+				for (int i = 0; i < inds.length; i++) {
+					double[] xy = data.get(inds[i]).toDoubleArray();
+					double a = Math.atan2(xy[1], xy[0]);
+					dA[0] = PamUtils.constrainedAngleR(a - meanAngle, Math.PI); // keep entries between -pi and pi
+				}
+				double angleSTD = std.getSTD(dA);
+				// I believe we now have an angle and a standard deviation. 
+				// change to clockwise angle from north
+				meanAngle = Math.PI / 2 - meanAngle;
+				long startMillis = units.get(inds[0]).getTimeMilliseconds();
+				long endMillis = units.get(inds[inds.length-1]).getEndTimeInMilliseconds();
+				LocalisationSummary locSummary = new LocalisationSummary(startMillis, endMillis, meanAngle, new BearingError(meanAngle, angleSTD), hydGroup.getChannelBitmap(), inds.length);
+				summaryList.add(locSummary);
+//				System.out.printf("Add bearing summary from cluster 0x%x at %3.1f degres\n", hydGroup.getChannelBitmap(), Math.toDegrees(meanAngle));
+				
+				nUsed += inds.length;
+				if ((double) nUsed / (double) data.numInstances() > 0.8) {
+					break; // ignore 20% outliers. 
+				}
+			}
+			
+		}
+				
+		return new ContactLocalisationSummary("Bearing Clusters", summaryList);
+	}
+
+
+	/**
+	 * Get a summary of localisations that have a LatLong using a 2D clustering algorithm. 
+	 * @param trigger
+	 * @param locUnits all units should have a localisation with a latlong
+	 * @return cluster summary
+	 */
+	private ContactLocalisationSummary getLocalisedSummary(CollatorTriggerData trigger, ArrayList<PamDataUnit> locUnits) {
+		if (locUnits == null || locUnits.size() == 0) {
 			return null;
 		}
 		// double check that everything does have the latlong we need !
@@ -109,7 +260,7 @@ public class GMMLocalisationSummariser extends BasicLocalisationSummariser {
 		// 2. Initialise the EM (Gaussian Mixture Model) clusterer
 		EM gmmClusterer = new EM();
 		try {
-			gmmClusterer.setNumClusters(3); 
+//			gmmClusterer.setNumClusters(3); 
 			gmmClusterer.setMaxIterations(100); // Set maximum iterations for EM convergence
 			gmmClusterer.setMinStdDev(50);
 
@@ -185,61 +336,8 @@ public class GMMLocalisationSummariser extends BasicLocalisationSummariser {
 				break;
 			}
 		}
+		
 		return new ContactLocalisationSummary("GMM Localiser", summaryList);
-		
-
-//		// 5. Output model capabilities and distribution details
-//		System.out.println(gmmClusterer.toString());
-//		try {
-//			// 6. Predict cluster memberships / profiles for each data point
-//			System.out.println("\n--- Instance cluster assignments ---");
-//			for (int i = 0; i < data.numInstances(); i++) {
-//				Instance instance = data.instance(i);
-//
-//				// Get the most likely cluster ID (0-indexed)
-//				int clusterID = gmmClusterer.clusterInstance(instance);
-//
-//				// Get the soft probability distribution across all clusters
-//				double[] softAssignments = gmmClusterer.distributionForInstance(instance);
-//
-//				System.out.printf("Instance %d -> Assigned Cluster: %d | Probability: %.2f%%%n", 
-//						i, clusterID, (softAssignments[clusterID] * 100));
-//			}
-//		}
-//		catch (Exception e) {
-//			System.out.println(e.toString());
-//		}
-		/*
-		 *  now see how many clusters there are, but ignore clusters that have very few entries (needs a
-		 *  parameter) and make an output of the mean of all the points in each of the other clusters. 
-		 */
-		
-
-
-		//		int iPoint = 0;
-		//		double[] xPoints = new double[nPoint];
-		//		double[] yPoints = new double[nPoint];
-		//		double[] weight = new double[nPoint];
-		//		LatLong[] latLongs = new LatLong[nPoint];
-		//		 it = locUnits.iterator();
-		//		while (it.hasNext()) {
-		//			PamDataUnit unit = it.next();
-		//			AbstractLocalisation loc = unit.getLocalisation();
-		//			LatLong latLong = loc.getLatLong(0);
-		//			latLongs[iPoint] = latLong; 
-		//			xPoints[iPoint] = latLong.getLongitude();
-		//			yPoints[iPoint] = latLong.getLatitude();
-		//			// weight according to the error. 
-		//			LocaliserError locErr = loc.getLocError(0);
-		//			weight[iPoint] = 1;
-		//			if (locErr != null) {
-		//				double errMag = locErr.getErrorMagnitude();
-		//				if (errMag > 0) {
-		//					weight[iPoint] = 1/errMag;
-		//				}
-		//			}
-		//			iPoint++;
-		//		}
 	}
 
 	/**

@@ -1,6 +1,5 @@
 package contactcollator.localisations;
 
-import Localiser.algorithms.locErrors.EllipticalError;
 import Localiser.algorithms.locErrors.LocaliserError;
 import PamUtils.LatLong;
 
@@ -12,15 +11,23 @@ import PamUtils.LatLong;
 public class LocalisationSummary {
 
 	private long startMillis, endMillis; // start and end times for units contributing to this
+	
 	private LatLong latLong;
 	
 	private LocaliserError localiserError;
+	
+	/**
+	 * Mean bearing to animal as clockwise bearing from north, in radians. 
+	 */
+	private Double meanBearing;
 
 	private int hydrophoneMap;
 
 	private int nEntries;
 
 	/**
+	 * @param startMillis
+	 * @param endMillis
 	 * @param latLong
 	 * @param localiserError
 	 * @param nEntries 
@@ -30,6 +37,25 @@ public class LocalisationSummary {
 		this.startMillis = startMillis;
 		this.endMillis = endMillis;
 		this.latLong = latLong;
+		this.localiserError = localiserError;
+		this.setHydrophoneMap(hydrophoneMap);
+		this.nEntries = nEntries;
+	}
+	
+	/**
+	 * 
+	 * @param startMillis
+	 * @param endMillis
+	 * @param meanBearing
+	 * @param localiserError
+	 * @param hydrophoneMap
+	 * @param nEntries
+	 */
+	public LocalisationSummary(long startMillis, long endMillis, double meanBearing, LocaliserError localiserError, int hydrophoneMap, int nEntries) {
+		super();
+		this.startMillis = startMillis;
+		this.endMillis = endMillis;
+		this.meanBearing = meanBearing;
 		this.localiserError = localiserError;
 		this.setHydrophoneMap(hydrophoneMap);
 		this.nEntries = nEntries;
@@ -116,6 +142,10 @@ public class LocalisationSummary {
 	 */
 	public void setnEntries(int nEntries) {
 		this.nEntries = nEntries;
+	}
+
+	public Double getMeanBearing() {
+		return meanBearing;
 	}
 	
 }

@@ -519,6 +519,9 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		synchronized (collatorControl) {
 			for (int i = 0; i < splitUnits.length; i++) {
 				collatorBlock.addPamData(splitUnits[i]);
+				if (splitUnits[i].getLocalisationSummary() != null) {
+					collatorControl.getCollatorProcess().getCollatofLocationDataBlock().addPamData(splitUnits[i]);
+				}
 			}
 		}
 		return errorType;

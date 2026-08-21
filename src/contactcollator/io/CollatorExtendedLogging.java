@@ -38,7 +38,7 @@ public class CollatorExtendedLogging extends CollatorLogging{
 	 group3DLocalizationUID;
 
 	public CollatorExtendedLogging(CollatorControl collatorControl, CollatorDataBlock pamDataBlock) {
-		super(collatorControl,pamDataBlock);
+		super(collatorControl,pamDataBlock, collatorControl.getUnitName());
 		
 //		PamTableDefinition table = new PamTableDefinition(pamDataBlock.getDataName());
 		PamTableDefinition table = super.getTableDefinition();

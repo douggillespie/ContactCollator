@@ -11,6 +11,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
+import Localiser.algorithms.locErrors.LocaliserError;
+import Localiser.algorithms.locErrors.json.LocaliserErrorFactory;
+import PamUtils.LatLong;
 import PamguardMVC.DataUnitBaseData;
 import PamguardMVC.PamDataBlock;
 import PamguardMVC.PamDataUnit;
@@ -26,6 +29,8 @@ import contactcollator.bearings.BearingSummary;
 import contactcollator.bearings.BearingSummaryLocalisation;
 import contactcollator.bearings.HeadingHistogram;
 import contactcollator.bearings.HeadingHistogramIO;
+import contactcollator.localisations.ContactLocalisationSummary;
+import contactcollator.localisations.LocalisationSummary;
 import contactcollator.trigger.CollatorTriggerData;
 import pamMaths.PamVector;
 
@@ -36,10 +41,11 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 	/**
 	 * Increase to 3 when adding multiple heading histograms. 
 	 */
-	private static final int CURRENTVERSION = 3;
+	private static final int CURRENTVERSION = 4;
 	
 	public static final int CLIP_COLLATOR = 12000;
-
+	
+	private LocaliserErrorFactory localiserErrorFactory = new LocaliserErrorFactory();
 	
 	private DataOutputStream dos;
 	
@@ -123,8 +129,7 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 			
 			/*
 			 * And do heading information, since that's reasonably essential.
-			 */
-			
+			 */			
 			BearingSummary bearingSummary = collatorDataUnit.getBearingSummary();
 			if (bearingSummary == null || bearingSummary.getWorldVector() == null) {
 				dos.writeByte(0);
@@ -158,6 +163,31 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 					headingHistogramIO.writeHeadingHist(dos, aHist);
 				}
 			}
+			// write out the localisation information:
+			ContactLocalisationSummary locSummary = collatorDataUnit.getLocalisationSummary();
+			if (locSummary == null || locSummary.getSummaries() == null || locSummary.getSummaries().size() == 0) {
+				dos.writeShort(0);
+			}
+			else {
+				ArrayList<LocalisationSummary> summaries = locSummary.getSummaries();
+				dos.writeShort(summaries.size()); // number of summaries. 
+				for (int i = 0; i < summaries.size(); i++) {
+					LocalisationSummary aSummary = summaries.get(i);
+					Double head = aSummary.getMeanBearing();
+					LatLong ll = aSummary.getLatLong();
+					dos.writeInt(aSummary.getHydrophoneMap());
+					if (head != null) {
+						dos.writeShort(1); // flag to say bearing
+						dos.writeDouble(head);
+					}
+					else {
+						dos.writeShort(2); // flag to say latlong
+						dos.writeDouble(ll.getLatitude());
+						dos.writeDouble(ll.getLongitude());
+					}
+					dos.writeUTF(aSummary.getLocaliserError().getJsonErrorString());
+				}
+			}
 			
 			
 			rawDataUtils.writeWaveClipInt8(dos, collatorDataUnit.getRawData());
@@ -177,6 +207,7 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 		BearingSummary bearingSummary = null;
 		HeadingHistogram headingHist = null;
 		CollatorDataUnit cdu = null;
+		ArrayList<LocalisationSummary> localisationSummaries = null;
 		try {
 			long trigMillis = dis.readLong();
 			String trigName = dis.readUTF();
@@ -204,7 +235,10 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 				PamVector vec = PamVector.fromHeadAndSlant(head*180.0/Math.PI, slant*180.0/Math.PI);
 				bearingSummary = new BearingSummary(n, vec, headSTD, phones, ambiguity);
 			}
-			int nHeadingHists = dis.readByte();
+			int nHeadingHists = 1;
+			if (moduleVersion >= 3) {
+				nHeadingHists = dis.readByte();
+			}
 			HashMap<Integer, HeadingHistogram> headingHists = null;
 			if (nHeadingHists > 0) {
 				headingHists = new HashMap<Integer, HeadingHistogram>();
@@ -214,9 +248,50 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 				headingHists.put(headingHist.getChannelMap(), headingHist);
 			}
 			
-			double[][] rawData = rawDataUtils.readWavClipInt8(dis);
+			if (moduleVersion >= 4) {
+				// get the localisation data
+				int nLocalisation = dis.readShort();
+				LocalisationSummary locSum;
+				localisationSummaries = new ArrayList<>();
+				if (nLocalisation > 0) {
+					for (int i = 0; i < nLocalisation; i++) {
+						int channels = dis.readInt();
+						int type = dis.readShort();
+						double bear = 0;
+						String errStr;
+						LatLong ll = null;
+						if (type == 1) {
+							bear = dis.readDouble();
+						}
+						else {
+							double lat = dis.readDouble();
+							double lon = dis.readDouble();
+							ll = new LatLong(lat, lon);
+						}
+						errStr = dis.readUTF();
+						LocaliserError locErr = localiserErrorFactory.getErrorFromJsonString(errStr);
+						if (type == 1) {
+							locSum = new LocalisationSummary(baseData.getTimeMilliseconds(), baseData.getEndTime(), bear, locErr, channels, nTrig);
+						}
+						else {
+							locSum = new LocalisationSummary(baseData.getTimeMilliseconds(), baseData.getEndTime(), ll, locErr, channels, nTrig);
+						}
+						localisationSummaries.add(locSum);
+					}
+					
 
-			cdu = new CollatorDataUnit(binaryObjectData.getTimeMilliseconds(), baseData.getChannelBitmap(), baseData.getStartSample(), fs, rawData[0].length, trigName, trigMillis, streamName, rawData);
+				}
+			}
+			
+			double[][] rawData = rawDataUtils.readWavClipInt8(dis);
+			int dataLength = 0;
+			if (rawData != null && rawData.length > 0) {
+				dataLength = rawData[0].length;
+			}
+			cdu = new CollatorDataUnit(binaryObjectData.getTimeMilliseconds(), baseData.getChannelBitmap(), baseData.getStartSample(), fs, dataLength, trigName, trigMillis, streamName, rawData);
+			if (localisationSummaries != null) {
+				cdu.setLocalisationSummary(new ContactLocalisationSummary("Binary read", localisationSummaries));
+			}
 			//cdu.findTriggerDataUnit();
 			cdu.setTriggerUTCs(triggerUTCs);
 			
