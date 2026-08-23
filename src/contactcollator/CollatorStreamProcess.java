@@ -119,7 +119,7 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 	public void newData(PamObservable o, PamDataUnit dataUnit) {
 		// see if we actually want it using the data selector
 		if(PamController.getInstance().getRunMode()==PamController.RUN_NETWORKRECEIVER) {
-			return;
+//			return; why was this in there ? Definitely don't want it for current project where we want CC to work on multi buoy output
 		}
 		if (wantDetectionData(dataUnit)) {
 			useDetectionData(dataUnit);
@@ -299,7 +299,12 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 				//							clipIt.remove();
 				//						}
 				//					}
-				clipRequestQueue.add(newRequest);
+				if (PamController.getInstance().getRunMode() == PamController.RUN_NETWORKRECEIVER) {
+					processClipRequest(newRequest);
+				}
+				else {
+					clipRequestQueue.add(newRequest);
+				}
 			}
 
 			
@@ -497,9 +502,9 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 			errorType = e.getDataCause();
 		}
 		
-		if (errorType == 0) {
-		unfinishedUnit.setRawData(wavData);
-		unfinishedUnit.setSampleDuration((long) wavData[0].length);
+		if (errorType == 0 && wavData != null) {
+			unfinishedUnit.setRawData(wavData);
+			unfinishedUnit.setSampleDuration((long) wavData[0].length);
 		}
 		
 		/**
@@ -571,7 +576,8 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 
 	public void processRequestList() {
 		if (PamController.getInstance().getRunMode() != PamController.RUN_NORMAL &&
-				PamController.getInstance().getRunMode() != PamController.RUN_MIXEDMODE) {
+				PamController.getInstance().getRunMode() != PamController.RUN_MIXEDMODE &&
+				PamController.getInstance().getRunMode() != PamController.RUN_NETWORKRECEIVER) {
 			return;
 		}
 		if (clipRequestQueue.size() == 0) {

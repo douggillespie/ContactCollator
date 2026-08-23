@@ -3,7 +3,6 @@ package contactcollator.io;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 
@@ -56,6 +55,8 @@ public class CollatorLocationJsonSource extends JSONObjectDataSource<CollatorLoc
 
 		JsonFactory jf = new JsonFactory();
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
+		String errString = null;
+		String ERRREPLACE = "aofjoifujeg";
 		try {
 			JsonGenerator jg = jf.createGenerator(os);
 			jg.writeStartObject();
@@ -75,14 +76,14 @@ public class CollatorLocationJsonSource extends JSONObjectDataSource<CollatorLoc
 				}
 				LocaliserError locErr = locSummary.getLocaliserError();
 				if (locErr != null) {
-					String errStr = locErr.getJsonErrorString();
-					jg.writeStringField("Error", errStr);
+					errString = locErr.getJsonErrorString();
+					// bit of a bodge, but it will do for now. 
+					jg.writeStringField("Error", ERRREPLACE);
 //					jg.writeFieldName("Error");
 //					os.write(errStr.getBytes());
 				}
 			}
 			
-
 //			jg.writeEndArray();
 			jg.writeEndObject();
 			jg.close();
@@ -92,8 +93,11 @@ public class CollatorLocationJsonSource extends JSONObjectDataSource<CollatorLoc
 			e.printStackTrace();
 			return null;
 		}
-
 		String jsonString = os.toString();
+		if (errString != null) {
+			// finish bodging in the error string
+			jsonString = jsonString.replace("\""+ERRREPLACE+"\"", errString);
+		}
 		return jsonString;
 	}
 
