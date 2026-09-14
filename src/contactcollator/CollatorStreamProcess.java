@@ -522,6 +522,7 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		CollatorDataUnit[] splitUnits = splitLocalisations(unfinishedUnit);
 		
 		synchronized (collatorControl) {
+//			System.out.printf("Add %d collator split units\n", splitUnits.length);
 			for (int i = 0; i < splitUnits.length; i++) {
 				collatorBlock.addPamData(splitUnits[i]);
 				if (splitUnits[i].getLocalisationSummary() != null) {
@@ -600,6 +601,8 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 						li.remove();
 					case RawDataUnavailableException.DATA_NOT_ARRIVED:
 						continue; // hopefully, will get this next time !
+					default:
+						li.remove();
 				}
 			}
 		}

@@ -1,6 +1,8 @@
 package contactcollator.trigger;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -9,13 +11,13 @@ import PamguardMVC.PamDataUnit;
 import contactcollator.CollatorParamSet;
 
 public class CountingTrigger implements CollatorTrigger {
-	
+
 	private CollatorParamSet parameterSet;
-	
+
 	private List<PamDataUnit> history;
 
 	private boolean inActiveTriggerState;
-	
+
 	public CountingTrigger(CollatorParamSet parameterSet) {
 		super();
 		this.parameterSet = parameterSet;
@@ -29,8 +31,9 @@ public class CountingTrigger implements CollatorTrigger {
 		clearListTo(dataUnit.getTimeMilliseconds() - (long) (parameterSet.triggerIntervalS*1000.));
 		int n2 = history.size();
 		synchronized (history) {
-			history.add(dataUnit);
-//			System.out.printf("Have %d in history, started with %d and removed %d (history length %3.1fs)\n", history.size(), n1, n1-n2, parameterSet.triggerIntervalS);
+//			history.add(dataUnit);
+			insertNew(history, dataUnit);
+			//			System.out.printf("Have %d in history, started with %d and removed %d (history length %3.1fs)\n", history.size(), n1, n1-n2, parameterSet.triggerIntervalS);
 		}
 		if (history.size() < parameterSet.triggerCount) {
 			return null;
@@ -49,6 +52,39 @@ public class CountingTrigger implements CollatorTrigger {
 	}
 
 	/**
+	 * Insert a new data unit into the list, but put it in the right place since
+	 * the units may not be arriving in order. 
+	 * @param history
+	 * @param newOne
+	 * @return position in the list. 
+	 */ 
+	private void insertNew(List<PamDataUnit> history, PamDataUnit newOne) {
+		synchronized (history) {
+			if (history.size() == 0) {
+				history.add(newOne);
+				return;
+			}
+			history.add(newOne);
+			Collections.sort(history);
+//			ListIterator<PamDataUnit> it = history.listIterator(history.size()-1);
+//			int nextInd = 0;
+//			while (it.hasPrevious()) {
+//				if (it.previous().getTimeMilliseconds() <= newOne.getTimeMilliseconds()) {
+//					nextInd = it.nextIndex();
+//				}
+//			}
+//			
+//			Iterator<PamDataUnit> li = history.iterator();
+//			while (li.hasNext()) {
+//				if (li.next().getTimeMilliseconds() > newOne.getTimeMilliseconds()) {
+//					li.i
+//				}
+//			}
+
+		}
+	}
+
+	/**
 	 * Clear the data history up to the given time. 
 	 * @param minTimeMilliseconds  min time in milliseconds. Any earlier data will be rmeoved from the list. 
 	 */
@@ -61,9 +97,9 @@ public class CountingTrigger implements CollatorTrigger {
 					it.remove();
 				}
 			}
-			
+
 		}
-		
+
 	}
 
 	@Override
