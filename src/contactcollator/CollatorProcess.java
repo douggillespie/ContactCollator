@@ -21,10 +21,6 @@ import annotation.DataAnnotation;
 import contactcollator.io.CollatorBinaryStorage;
 import contactcollator.io.CollatorExtendedLogging;
 import contactcollator.io.CollatorJsonDataSource;
-import contactcollator.io.CollatorLocationJsonSource;
-import contactcollator.io.CollatorLocationLogging;
-import contactcollator.io.CollatorLogging;
-import contactcollator.swing.CollatorDisplayProvider;
 import contactcollator.swing.CollatorOverlayGraphics;
 import detectiongrouplocaliser.DetectionGroupDataUnit;
 import group3dlocaliser.Group3DDataUnit;
@@ -40,7 +36,7 @@ public class CollatorProcess extends PamProcess {
 	
 	private CollatorDataBlock collatorDataBlock;
 	
-	private CollatorDataBlock collatorLocalisationSummaries;
+//	private CollatorDataBlock collatorLocalisationSummaries;
 	
 	private AnnotatedCollationDataBlock annotatedDataBlock;
 	
@@ -62,10 +58,6 @@ public class CollatorProcess extends PamProcess {
 		collatorDataBlock.setPamSymbolManager(symbolManager);
 		addOutputDataBlock(collatorDataBlock);
 		
-		collatorLocalisationSummaries = new CollatorDataBlock(processName + " Localisations", this, 0);
-		collatorLocalisationSummaries.SetLogging(new CollatorLocationLogging(collatorControl, collatorLocalisationSummaries));
-		collatorLocalisationSummaries.setJSONDataSource(new CollatorLocationJsonSource());	
-		addOutputDataBlock(collatorLocalisationSummaries);
 		
 		annotatedDataBlock = new AnnotatedCollationDataBlock("Annotated_Detections",this,0);
 		annotatedDataBlock.setOverlayDraw(new CollatorOverlayGraphics(annotatedDataBlock));
@@ -298,13 +290,13 @@ public class CollatorProcess extends PamProcess {
 		return collatorDataBlock;
 	}
 	
-	/**
-	 * Get the datablock being used more exclusively for newer (2026) localisation data. 
-	 * @return
-	 */
-	public CollatorDataBlock getCollatofLocationDataBlock() {
-		return collatorLocalisationSummaries;
-	}
+//	/**
+//	 * Get the datablock being used more exclusively for newer (2026) localisation data. 
+//	 * @return
+//	 */
+//	public CollatorDataBlock getCollatofLocationDataBlock() {
+//		return collatorLocalisationSummaries;
+//	}
 	
 	public void saveWAV(long fs, double[][] wav, long UID) {
 		AudioFormat af = new Wav16AudioFormat(fs, wav.length);

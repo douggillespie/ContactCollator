@@ -175,17 +175,26 @@ public class CollatorBinaryStorage extends BinaryDataSource {
 					LocalisationSummary aSummary = summaries.get(i);
 					Double head = aSummary.getMeanBearing();
 					LatLong ll = aSummary.getLatLong();
+					LocaliserError localiserError = aSummary.getLocaliserError();
 					dos.writeInt(aSummary.getHydrophoneMap());
 					if (head != null) {
 						dos.writeShort(1); // flag to say bearing
 						dos.writeDouble(head);
 					}
-					else {
+					else if (ll != null) {
 						dos.writeShort(2); // flag to say latlong
 						dos.writeDouble(ll.getLatitude());
 						dos.writeDouble(ll.getLongitude());
 					}
-					dos.writeUTF(aSummary.getLocaliserError().getJsonErrorString());
+					else {
+						dos.writeShort(0); // flag to say nothing. 
+					}
+					if (localiserError != null) {
+						dos.writeUTF(localiserError.getJsonErrorString());
+					}
+					else {
+						dos.writeUTF("");
+					}
 				}
 			}
 			

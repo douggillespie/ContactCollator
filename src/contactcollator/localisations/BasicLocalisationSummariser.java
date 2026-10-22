@@ -44,6 +44,13 @@ public abstract class BasicLocalisationSummariser implements LocalisationSummari
 	/**
 	 * Get a list of localised units, note that these may 
 	 * be super detections of the original list of units that went in. 
+	 * This does a hierarchical decision whereby anything with a 2D localisation gets
+	 * into one list, only if a data unit doesn't have 2D, then we look to see if it has a bearing,
+	 * so any data unit that's in the bearing list won't already be in the 2D list. Anything without 
+	 * any localisation ends up in the 'nothing' list.  
+	 * <br> if we want a list of EVERYTHING with bearing, then the code would need changing. 
+	 * <br> note that the three lists may contain different types of data units, particularly the localised one being crossed bearing 
+	 * objects rather than whatever the input list type (e,g righthwaledataunits) was. 
 	 * @param dataList
 	 * @return
 	 */

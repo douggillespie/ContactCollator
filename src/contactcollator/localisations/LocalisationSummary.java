@@ -12,6 +12,8 @@ public class LocalisationSummary {
 
 	private long startMillis, endMillis; // start and end times for units contributing to this
 	
+	private LocalisationType localisationType;
+	
 	private LatLong latLong;
 	
 	private LocaliserError localiserError;
@@ -34,6 +36,7 @@ public class LocalisationSummary {
 	 */
 	public LocalisationSummary(long startMillis, long endMillis, LatLong latLong, LocaliserError localiserError, int hydrophoneMap, int nEntries) {
 		super();
+		this.localisationType = LocalisationType.POSITION;
 		this.startMillis = startMillis;
 		this.endMillis = endMillis;
 		this.latLong = latLong;
@@ -53,12 +56,22 @@ public class LocalisationSummary {
 	 */
 	public LocalisationSummary(long startMillis, long endMillis, double meanBearing, LocaliserError localiserError, int hydrophoneMap, int nEntries) {
 		super();
+		this.localisationType = LocalisationType.BEARING;
 		this.startMillis = startMillis;
 		this.endMillis = endMillis;
 		this.meanBearing = meanBearing;
 		this.localiserError = localiserError;
 		this.setHydrophoneMap(hydrophoneMap);
 		this.nEntries = nEntries;
+	}
+
+	public LocalisationSummary(long startMillis, long endMillis,int hydrophoneMap, int nEntries) {
+		this.localisationType = LocalisationType.NONE;
+		this.startMillis = startMillis;
+		this.endMillis = endMillis;
+		this.setHydrophoneMap(hydrophoneMap);
+		this.nEntries = nEntries;
+		
 	}
 
 	/**
@@ -146,6 +159,10 @@ public class LocalisationSummary {
 
 	public Double getMeanBearing() {
 		return meanBearing;
+	}
+
+	public LocalisationType getLocalisationType() {
+		return localisationType;
 	}
 	
 }

@@ -266,6 +266,7 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 //				newDataUnit.setLocalisation(new SummaryLocalisation(newDataUnit, locSummary, locSummary.getHydrophoneMap()));
 			}
 			
+			// this is the old method from when there was only one group. Probably too obsolete now to keep
 			BearingSummary bearingSummary = getBearingSummary(trigger);
 			if (bearingSummary != null) {
 				newDataUnit.setBearingSummary(new BearingSummaryLocalisation(newDataUnit, bearingSummary));
@@ -512,24 +513,29 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		 * mess up some other threading stuff by blocking the datablock users for too long
 		 * leading to a lock. 
 		 */
-		unfinishedUnit.setParentDataBlock(collatorBlock);
+		collatorBlock.addPamData(unfinishedUnit);
+//		unfinishedUnit.setParentDataBlock(collatorBlock);
 
 		/*
 		 * Bit messy, but by the time we get here, there may be multiple localisations in the data unit. 
 		 * in which case we need to generate multiple output data units. Later, we may revise this and 
 		 * change to a single massive json summary of all localisation data in the unit ? 
+		 * 
+		 * Going to revise this and send out one more complex summary with multiple localisations 
+		 * at least to the locations data block. Other blocks may prefer multiple lines still to 
+		 * fit into the simpler database format ? 
 		 */
-		CollatorDataUnit[] splitUnits = splitLocalisations(unfinishedUnit);
-		
-		synchronized (collatorControl) {
-//			System.out.printf("Add %d collator split units\n", splitUnits.length);
-			for (int i = 0; i < splitUnits.length; i++) {
-				collatorBlock.addPamData(splitUnits[i]);
-				if (splitUnits[i].getLocalisationSummary() != null) {
-					collatorControl.getCollatorProcess().getCollatofLocationDataBlock().addPamData(splitUnits[i]);
-				}
-			}
-		}
+//		collatorControl.getCollatorProcess().getCollatofLocationDataBlock().addPamData(unfinishedUnit);
+//		CollatorDataUnit[] splitUnits = splitLocalisations(unfinishedUnit);
+//		synchronized (collatorControl) {
+////			System.out.printf("Add %d collator split units\n", splitUnits.length);
+//			for (int i = 0; i < splitUnits.length; i++) {
+//				collatorBlock.addPamData(splitUnits[i]);
+//				if (splitUnits[i].getLocalisationSummary() != null) {
+//					collatorControl.getCollatorProcess().getCollatofLocationDataBlock().addPamData(splitUnits[i]);
+//				}
+//			}
+//		}
 		return errorType;
 	}
 	

@@ -2,6 +2,7 @@ package contactcollator.localisations;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -47,11 +48,14 @@ public class GMMLocalisationSummariser extends BasicLocalisationSummariser {
 		// get a set of units that have a latlong.
 		// initial code here is similar to in Averager. 
 		LocalisationSets localisationSet = getLocalisedUnits(trigger.getDataList());
+		
 		ContactLocalisationSummary fullSummary = getLocalisedSummary(trigger, localisationSet.getLocalised());
 
 		ContactLocalisationSummary bearingSummary = getBearingSummary(trigger, localisationSet.getBearinged());
 		
-		return combineSummaries(fullSummary, bearingSummary, null);
+		ContactLocalisationSummary nothingSummary = getNothingSummary(trigger, localisationSet.getNothing());
+		
+		return combineSummaries(fullSummary, bearingSummary, nothingSummary);
 	}
 	
 	/**
@@ -59,19 +63,84 @@ public class GMMLocalisationSummariser extends BasicLocalisationSummariser {
 	 * For now, just pick what seems best. 
 	 * @param latLongs summaries that have lat longs
 	 * @param bearings summaries that have only a bearing
-	 * @param nothings summaries that have nothing
+	 * @param nothingSummary summaries that have nothing
 	 * @return
 	 */
-	public ContactLocalisationSummary combineSummaries(ContactLocalisationSummary latLongs, ContactLocalisationSummary bearings, ContactLocalisationSummary nothings) {
+	public ContactLocalisationSummary combineSummaries(ContactLocalisationSummary latLongs, ContactLocalisationSummary bearings, ContactLocalisationSummary nothingSummary) {
+//		if (latLongs != null) {
+//			return latLongs;
+//		}
+//		if (bearings != null) {
+//			return bearings;
+//		}
+//		return nothings;
+		/*
+		 * Need to give back a master list of localisations now, that may be of different types, including latlongs, bearings, and nothings. 
+		 * The localised lists have already each been individually filtered to exclude outliers by only sending back 80% or more of all 
+		 * possible clusters. however, that may mean that some of those lists may have clusters with very few entries which might still be 
+		 * outliers, e.g. if crossed bearing was working really well, but one bad bearing make a couple of detections fail to cross. 
+		 * So what we really need to do is apply the 80% rule again on an uber list of all possible localisations in all three lists types. 
+		 * Or both the main list types ? And then dump any groups that have very little data remaining. 
+		 * Also note, that the nothing list will only have content from devices with no bearing capability, since if bearings are possible
+		 * they are always estimated (e.g. CAB Sentinel). So perhaps include these whatever ? But still need to break them up by device.  
+		 */
+		// so start by making a list of all the ones with lat longs and with bearings. then we'll sort them. 
+		ArrayList<LocalisationSummary> allLocTypes  = new ArrayList<LocalisationSummary>();
 		if (latLongs != null) {
-			return latLongs;
+			allLocTypes.addAll(latLongs.getSummaries());
 		}
 		if (bearings != null) {
-			return bearings;
+			allLocTypes.addAll(bearings.getSummaries());
 		}
-		return nothings;
+		allLocTypes.sort(new LocalisationSorter());
+		// then add the no bearing ones to the end of the list
+		if (nothingSummary != null) {
+			allLocTypes.addAll(nothingSummary.getSummaries());
+		}
+		// give it back ...
+		return new ContactLocalisationSummary(null, allLocTypes);
 	}
-	
+
+	/**
+	 * Sort localisations. Note that this is doing a reverse order, so the first in the list
+	 * after this has been applied will be the biggest localisation. 
+	 */
+	private class LocalisationSorter implements Comparator<LocalisationSummary> {
+
+		@Override
+		public int compare(LocalisationSummary o1, LocalisationSummary o2) {
+			// get the number of entries, then scale up by the number of channels used to 
+			// create the localisation, i.e. for a crossed bearing, this will end up as 2x the score for a bearing only. 
+			int n1 = o1.getnEntries();
+			int n2 = o2.getnEntries();
+			n1 *= Math.max(1, PamUtils.getNumChannels(o1.getHydrophoneMap()));
+			n2 *= Math.max(1, PamUtils.getNumChannels(o2.getHydrophoneMap())); 
+			return n1-n2;
+		}
+
+	}
+
+	/**
+	 * Split up everything that's left, that has no localisation information, and put into the 
+	 * same structures. 
+	 * @param trigger
+	 * @param nothinged
+	 * @return
+	 */
+	private ContactLocalisationSummary getNothingSummary(CollatorTriggerData trigger, ArrayList<PamDataUnit> nothinged) {
+		ArrayList<SuperDetection> groups = groupByHydrophones(nothinged);
+		if (groups == null || groups.size() == 0) {
+			return null;
+		}
+		ArrayList<LocalisationSummary> sums = new ArrayList();
+		// don't do any 80% rule on this, since we just have a count per sensor platform.
+		for (SuperDetection group : groups) {
+			LocalisationSummary ls = new LocalisationSummary(group.getTimeMilliseconds(), group.getEndTimeInMilliseconds(), group.getChannelBitmap(), group.getSubDetectionsCount());
+			sums.add(ls);
+		}
+		return new ContactLocalisationSummary(null, sums);
+	}
+
 	/**
 	 * Get a summary of localisations that only have a bearing. Use a clustering algorithm to 
 	 * generate multiple bearings if it seems sensible. 
@@ -102,11 +171,16 @@ public class GMMLocalisationSummariser extends BasicLocalisationSummariser {
 			int n = units.size();
 			// prepare clustering
 			Instances	data = new Instances("Position data", coordinateAttributes, n);
+			double[] angleErrors = new double[n];
 			for (int i = 0; i < n; i++) {
 				PamDataUnit aUnit = units.get(i);
 				AbstractLocalisation loc = aUnit.getLocalisation();
 				if (loc == null) {
 					continue; // should never happen since we selected units with localisation
+				}
+				double[] angleErr = loc.getAngleErrors();
+				if (angleErr != null) {
+					angleErrors[i] = angleErr[0]; // get the first error for each bearing. 
 				}
 				PamVector[] vec = loc.getRealWorldVectors();
 				if (vec == null) {
@@ -163,7 +237,17 @@ public class GMMLocalisationSummariser extends BasicLocalisationSummariser {
 					double a = Math.atan2(xy[1], xy[0]);
 					dA[0] = PamUtils.constrainedAngleR(a - meanAngle, Math.PI); // keep entries between -pi and pi
 				}
-				double angleSTD = std.getSTD(dA);
+				/*
+				 *  if there is only one entry, then need to take the error from the single entry, 
+				 *  otherwise take the STD of all angles. 
+				 */
+				double angleSTD;
+				if (inds.length == 1) {
+					angleSTD = angleErrors[inds[0]];
+				}
+				else {
+					angleSTD = std.getSTD(dA);
+				}
 				// I believe we now have an angle and a standard deviation. 
 				// change to clockwise angle from north
 				meanAngle = Math.PI / 2 - meanAngle;

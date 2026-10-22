@@ -504,6 +504,9 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder, Clo
 		return str;
 	}
 	
+	public int getDetectionCount() {
+		return triggerData.getDataList().size();
+	}
 
 
 
