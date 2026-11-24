@@ -4,7 +4,7 @@
   <groupId>ClipCollator</groupId>
   <artifactId>ClipCollator</artifactId>
   <name>Clip Collator</name>
-  <version>1.7.0-SNAPSHOT</version>
+  <version>1.8.0</version>
   <description>Bring all data from all detectors into a common format</description>
   <build>
     <sourceDirectory>src</sourceDirectory>

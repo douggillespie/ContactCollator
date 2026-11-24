@@ -81,8 +81,6 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder, Clo
 
 	private String jsonLocalisationError;
 
-	
-
 	/**
 	 * Real time constructor
 	 * @param timeMilliseconds
@@ -170,6 +168,18 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder, Clo
 	
 	public void setTriggerData(CollatorTriggerData triggerData) {
 		this.triggerData = triggerData;
+	}
+	
+	public int getTriggerChannelMap() {
+		if (triggerData == null) {
+			return 0;
+		}
+		return triggerData.getChannelBitmap();
+	}
+
+	@Override
+	public int getChannelBitmap() {
+		return super.getChannelBitmap();
 	}
 
 	/**
@@ -368,6 +378,10 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder, Clo
 	}
 	
 	public CollatorDataUnit clone() {
+		CollatorTriggerData newTtriggerData = this.getTriggerData();
+		if (newTtriggerData != null) {
+			newTtriggerData = newTtriggerData.clone();
+		}
 		CollatorDataUnit newUnit = new CollatorDataUnit(this.getTimeMilliseconds(),
 				this.getChannelBitmap(),
 				this.getStartSample(),
@@ -380,6 +394,7 @@ public class CollatorDataUnit extends ClipDataUnit implements RawDataHolder, Clo
 		newUnit.setUID(this.getUID());
 		newUnit.setDataTransforms(this.getDataTransforms());
 		newUnit.setBearingSummary(this.getBearingSummaryLocalisation());
+		newUnit.setLocalisationSummary(localisationSummary);
 		newUnit.setHeadingHistograms(this.getHeadingHistograms());
 		newUnit.setTriggerUTCs(this.triggerUTCs);
 		return newUnit;

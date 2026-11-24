@@ -1,15 +1,17 @@
 package contactcollator.trigger;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import PamUtils.PamCalendar;
 import PamguardMVC.PamDataUnit;
 
-public class CollatorTriggerData {
+public class CollatorTriggerData implements Cloneable {
 
 	private long startTime, endTime, lastPossibleEndTime;
 	private List<PamDataUnit> dataList;
 	private String triggerName;
+	private CollatorTriggerData newData;
 	
 	public CollatorTriggerData(long startTime, long endTime, long lastPossibleEndTime, String triggerName, List<PamDataUnit> dataList) {
 		super();
@@ -27,6 +29,21 @@ public class CollatorTriggerData {
 		this.triggerName = triggerName;
 		this.dataList = dataList;
 		this.setLastPossibleEndTime(endTime);
+	}
+	
+	/**
+	 * Get bitmap of all data in list. 
+	 * @return
+	 */
+	public int getChannelBitmap() {
+		if (dataList == null) {
+			return 0;
+		}
+		int b = 0;
+		for (PamDataUnit du : dataList) {
+			b |= du.getChannelBitmap();
+		}
+		return b;
 	}
 
 	/**
@@ -69,6 +86,23 @@ public class CollatorTriggerData {
 	public String toString() {
 		return String.format("Trigger %s %s - %s with %d datas", triggerName, 
 				PamCalendar.formatDBDateTime(startTime), PamCalendar.formatTime(endTime), dataList.size());
+	}
+
+	@Override
+	public CollatorTriggerData clone() {
+		try {
+			List<PamDataUnit> aDataList = dataList;
+			if (aDataList != null) {
+				aDataList = new ArrayList<PamDataUnit>(dataList);
+			}
+			newData = (CollatorTriggerData) super.clone();
+			newData.dataList = aDataList;
+			
+			return newData;
+		} catch (CloneNotSupportedException e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 	
 }

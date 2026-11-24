@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ClipCollator</groupId>
 	<artifactId>ClipCollator</artifactId>
-	<version>1.7.0-SNAPSHOT</version>
+	<version>1.8.0</version>
 	<name>Clip Collator</name>
 	<description>Bring all data from all detectors into a common format</description>
 	<build>

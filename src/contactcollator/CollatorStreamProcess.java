@@ -373,6 +373,9 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 		long triggerDurationMillis = triggerEndTime-triggerStartTime;
 		int triggerDurationSamples = (int) (fs*triggerDurationMillis/1000);
 		long triggerStartSample = best.getStartSample();
+		/**
+		 * trigChannelMap is the channel map of the best (loudest) call that gets used as the examplar template. 
+		 */
 		int trigChannelMap = best.getChannelBitmap();
 //		long triggerEndSample = triggerStartSample+triggerDurationSamples;
 		//long wavEnd = cloneCopy.get(cloneCopy.size()-1).getEndTimeInMilliseconds();
@@ -420,8 +423,9 @@ public class CollatorStreamProcess extends PamProcess implements ClipDisplayPare
 //		System.out.printf("Create clip chan %d %s to %s, starting at %s\n", trigChannelMap, PamCalendar.formatTime(triggerStartTime, true), 
 //				PamCalendar.formatTime(triggerEndTime, true), PamCalendar.formatTime(clipStartMillis, true));
 		
-		int firstTrigChan = PamUtils.getLowestChannel(trigChannelMap); 
+		int firstTrigChan = PamUtils.getLowestChannel(trigChannelMap); // why was this only giving one channel to the clip unit ? 
 		firstTrigChan = 1<<firstTrigChan;
+//		int trigChannels = trigger.getChannelBitmap();
 		CollatorDataUnit newData = new CollatorDataUnit(clipStartMillis, firstTrigChan, clipStartSample, parameterSet.outputSampleRate, clipDurationSamples, trigger, parameterSet.setName, null);
 		
 		
